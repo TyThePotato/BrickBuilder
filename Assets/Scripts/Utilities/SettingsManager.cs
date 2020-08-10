@@ -56,6 +56,7 @@ public class Settings {
     public bool Autosave = true; // automatically save the map at a specified interval
     public int AutosaveRate = 10; // how often to autosave the map (in minutes)
     public int ScreenshotSizeMultiplier = 1; // supersizes screenshots
+    public bool DiscordRP = false; // Discord Rich Presence
 
     // Color Picker
     public Color[] SavedColors = new Color[8] { new Color(1.0f, 0.2f, 0.2f), new Color(1.0f, 0.5f, 0.2f), new Color(1.0f, 0.85f, 0.2f), new Color(0.22f, 1.0f, 0.2f), new Color(0.2f, 1.0f, 0.9f), new Color(0.2f, 0.47f, 1.0f), new Color(0.6f, 0.2f, 1.0f), new Color(1.0f, 0.2f, 0.9f) }; // saved colorpicker colors

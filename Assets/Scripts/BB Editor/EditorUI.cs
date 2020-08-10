@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -44,6 +45,10 @@ public class EditorUI : MonoBehaviour
     public RectTransform TransformPropertyLabel;
     public TMP_Text TransformPropertyLabelAxis;
     public TMP_Text TransformPropertyLabelValue;
+
+    public GameObject SaveOptionsPanel;
+    public Toggle SaveOptionsBBData;
+    public string SavePath; // not ui but shh
 
     public TMP_InputField FileField;
     public int FileFieldType;
@@ -109,6 +114,8 @@ public class EditorUI : MonoBehaviour
     public Toggle FramelimiterToggle;
     public TMP_InputField FramelimiterField;
 
+    public Toggle RichPresenceToggle;
+
     public Slider ScreenshotSizeMultiplierSlider;
     public TMP_Text ScreenshotSizeMultiplierLabel;
 
@@ -156,6 +163,11 @@ public class EditorUI : MonoBehaviour
         BBInputManager.Controls.EditorKeys.Translate.performed += ctx => ChangeGizmo(0);
         BBInputManager.Controls.EditorKeys.Scale.performed += ctx => ChangeGizmo(1);
         BBInputManager.Controls.EditorKeys.Rotate.performed += ctx => ChangeGizmo(2);
+
+        // brick movement keys
+        BBInputManager.Controls.Main.SelectionX.performed += ctx => MoveSelectionWithKeys(0, ctx.ReadValue<float>());
+        BBInputManager.Controls.Main.SelectionY.performed += ctx => MoveSelectionWithKeys(1, ctx.ReadValue<float>());
+        BBInputManager.Controls.Main.SelectionZ.performed += ctx => MoveSelectionWithKeys(2, ctx.ReadValue<float>());
 
         LoadPreferences();
     }
@@ -223,6 +235,31 @@ public class EditorUI : MonoBehaviour
         }
     }
 
+    public void MoveSelectionWithKeys (int axis, float value) {
+        if (!BBInputManager.IsCtrlDown() && SelectedElements.Count > 0) {
+            float snap = SettingsManager.Settings.StudSnap;
+            float x = axis == 0 ? value * snap : 0f;
+            float y = axis == 1 ? value * snap : 0f;
+            float z = axis == 2 ? value * snap : 0f;
+
+            int dir = (int)MapBuilder.instance.mainCam.transform.eulerAngles.y.Round(0.0222f); // camera direction in 45 degree intervals
+            Vector3 forward = Helper.EightWayFromAngle(dir);
+            Vector3 right = Helper.EightWayFromAngle((dir+90)% 360);
+            Vector3 m = forward * z + right * x;
+            m.y = y;
+
+            for (int i = 0; i < SelectedElements.Count; i++) {
+                if (SelectedElements[i].Type == Map.ElementType.Brick) {
+                    Brick b = SelectedElements[i].AssociatedObject as Brick;
+                    b.gameObject.transform.position = (b.gameObject.transform.position + m); // might need to round?
+                    b.Position = BB.ToBB(b.gameObject.transform.position, b.Scale);
+                }
+            }
+            UpdateInspector();
+            
+        }
+    }
+
     // File buttons
 
     public void NewFileButton() {
@@ -247,12 +284,31 @@ public class EditorUI : MonoBehaviour
             if (Keyboard.current.leftCtrlKey.isPressed) {
                 FileInputField(1);
             } else {
-                main.SaveMap();
+                //main.SaveMap();
+                SavePath = main.SaveMapDialog();
+                if (SavePath != "") {
+                    if (Path.GetExtension(SavePath) == ".bb") {
+                        main.SaveMap(SavePath);
+                    } else {
+                        ShowSaveOptions();
+                    }
+                }
             }
             
         } else {
             main.SaveMap();
         }
+    }
+
+    public void ShowSaveOptions () {
+        SaveOptionsPanel.SetActive(true);
+        SetInputEnabled(false);
+    }
+
+    public void SaveOptionsFinish () {
+        main.SaveMap(SavePath, SaveOptionsBBData.isOn);
+        SaveOptionsPanel.SetActive(false);
+        SetInputEnabled(true);
     }
 
     public void FileInputField (int type) {
@@ -264,7 +320,13 @@ public class EditorUI : MonoBehaviour
         if (FileFieldType == 0) {
             main.OpenMap(FileField.text);
         } else if (FileFieldType == 1) {
-            main.SaveMap(FileField.text);
+            //main.SaveMap(FileField.text);
+            SavePath = FileField.text;
+            if (Path.GetExtension(SavePath) == ".bb") {
+                main.SaveMap(SavePath);
+            } else {
+                ShowSaveOptions();
+            }
         }
         FileField.gameObject.SetActive(false);
     }
@@ -365,7 +427,8 @@ public class EditorUI : MonoBehaviour
             GameObject element = Instantiate(HierarchyElementTemplate);
             HierarchyElement he = element.GetComponent<HierarchyElement>();
 
-            he.Set(Map.ElementType.Brick, HierarchyIcons[1], b.Name, element, b);
+            int iconID = 2 + (int)b.Shape;
+            he.Set(Map.ElementType.Brick, HierarchyIcons[iconID], b.Name, element, b);
 
             // register click event
             he.SelectionButton.onClick.AddListener(delegate { SelectHierarchyElement(he, true); });
@@ -386,7 +449,7 @@ public class EditorUI : MonoBehaviour
             GameObject element = Instantiate(GroupHierarchyElementTemplate);
             HierarchyElement he = element.GetComponent<HierarchyElement>();
 
-            he.Set(Map.ElementType.Group, HierarchyIcons[2], g.Name, element, g);
+            he.Set(Map.ElementType.Group, HierarchyIcons[1], g.Name, element, g);
 
             // register click event
             he.SelectionButton.onClick.AddListener(delegate { SelectHierarchyElement(he, true); });
@@ -817,6 +880,7 @@ public class EditorUI : MonoBehaviour
                         break;
                     case 6:
                         b.Shape = (Brick.ShapeType)BrickInspectorElements[6].GetDropdown();
+                        SelectedElements[i].SetIcon(HierarchyIcons[2+(int)b.Shape]);
                         break;
                     case 7:
                         b.CollisionEnabled = BrickInspectorElements[7].GetBool();
@@ -1179,6 +1243,11 @@ public class EditorUI : MonoBehaviour
         gizmo.ClearTargets();
     }
 
+    public void UnfocusInputField () {
+        //inputField.DeactivateInputField();
+        EventSystem.current.SetSelectedGameObject(null);
+    }
+
     // Settings
 
     public void ShowPreferences () {
@@ -1209,6 +1278,7 @@ public class EditorUI : MonoBehaviour
         SettingsManager.Settings.Framelimiter = FramelimiterToggle.isOn;
         SettingsManager.Settings.Framelimit = int.Parse(FramelimiterField.text, CultureInfo.InvariantCulture);
         SettingsManager.Settings.ScreenshotSizeMultiplier = (int)ScreenshotSizeMultiplierSlider.value;
+        SettingsManager.Settings.DiscordRP = RichPresenceToggle.isOn;
         main.ApplySettings();
 
         // Keybinds
@@ -1261,6 +1331,8 @@ public class EditorUI : MonoBehaviour
 
         ScreenshotSizeMultiplierSlider.SetValueWithoutNotify(SettingsManager.Settings.ScreenshotSizeMultiplier);
         ScreenshotSizeMultiplierLabel.text = SettingsManager.Settings.ScreenshotSizeMultiplier + "x";
+
+        RichPresenceToggle.SetIsOnWithoutNotify(SettingsManager.Settings.DiscordRP);
 
         // Hotkeys
         for (int i = 0; i < BBInputManager.RebindableKeys.Count; i++) {

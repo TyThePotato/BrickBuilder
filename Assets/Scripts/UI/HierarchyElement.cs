@@ -26,6 +26,10 @@ public class HierarchyElement : MonoBehaviour
         AssociatedObject = associatedObject;
     }
 
+    public void SetIcon (Sprite icon) {
+        Icon.sprite = icon;
+    }
+
     public void Add (HierarchyElement element) {
         if (!ChildElements.ContainsValue(element)) {
             if (element.AssociatedObject is Brick) {

@@ -145,6 +145,39 @@ namespace Utils {
 
     // functions to help quickly do simple things
     public static class Helper {
+        public static Vector3 EightWayFromAngle (int angle) {
+            switch (angle) {
+                case 0:
+                    return new Vector3(0, 0, 1);
+                    break;
+                case 45:
+                    return new Vector3(1, 0, 1);
+                    break;
+                case 90:
+                    return new Vector3(1, 0, 0);
+                    break;
+                case 135:
+                    return new Vector3(1, 0, -1);
+                    break;
+                case 180:
+                    return new Vector3(0, 0, -1);
+                    break;
+                case 225:
+                    return new Vector3(-1, 0, -1);
+                    break;
+                case 270:
+                    return new Vector3(-1, 0, 0);
+                    break;
+                case 315:
+                    return new Vector3(-1, 0, 1);
+                    break;
+                case 360:
+                    return new Vector3(0, 0, 1);
+                    break;
+            }
+            return Vector3.zero;
+        }
+
         public static float[] StringToFloatArray(string input, int amount = 0) {
             string[] separated = input.Split(new string[] { " " }, StringSplitOptions.RemoveEmptyEntries);
             if (amount <= 0) { 

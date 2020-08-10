@@ -8,7 +8,7 @@ using Utils;
 public class MapExporter : MonoBehaviour
 {
     
-    public static void Export (Map map, string path, Map.MapVersion version) {
+    public static void Export (Map map, string path, Map.MapVersion version, bool bbData = true) {
         switch (version) {
             case Map.MapVersion.BrickBuilder:
                 //Export02BRK(map, path, true);
@@ -18,7 +18,7 @@ public class MapExporter : MonoBehaviour
                 Export01BRK(map, path);
                 break;
             case Map.MapVersion.v2:
-                Export02BRK(map, path, true);
+                Export02BRK(map, path, bbData);
                 break;
         }
     }

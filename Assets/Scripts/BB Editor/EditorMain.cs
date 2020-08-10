@@ -15,8 +15,13 @@ public class EditorMain : MonoBehaviour
     public bool MapIsLoaded = false;
     public UnityEvent MapLoaded;
 
-    public ExtensionFilter[] MapExtensions = new ExtensionFilter[] {
-        new ExtensionFilter("Brick-Hill Map", "brk")
+    public ExtensionFilter[] OpenMapExtensions = new ExtensionFilter[] {
+        new ExtensionFilter("Brick-Hill Map", new String[] {"brk", "bb"})
+    };
+
+    public ExtensionFilter[] SaveMapExtensions = new ExtensionFilter[] {
+        new ExtensionFilter("Brick-Hill Map", "brk"),
+        new ExtensionFilter("BrickBuilder Map", "bb")
     };
 
     //public Map.MapVersion ExportVersion;
@@ -34,6 +39,13 @@ public class EditorMain : MonoBehaviour
         SettingsManager.SettingsChanged.AddListener(ApplySettings);
         mapStopwatch = new Stopwatch();
         ApplySettings();
+
+        // create rp
+        if (SettingsManager.Settings.DiscordRP) {
+            gameObject.GetComponent<RichPresenceComponent>().enabled = true;
+        } else {
+            Destroy(gameObject.GetComponent<RichPresenceComponent>()); // delete rp if disabled
+        }
     }
 
     private void Start() {
@@ -80,7 +92,7 @@ public class EditorMain : MonoBehaviour
     public void OpenMap (string path = null) {
         if (path == null) {
             // show a file dialog
-            string[] paths = StandaloneFileBrowser.OpenFilePanel("Open Map", "", MapExtensions, false);
+            string[] paths = StandaloneFileBrowser.OpenFilePanel("Open Map", "", OpenMapExtensions, false);
             // make sure a file was selected
             if (paths.Length > 0) {
                 mapStopwatch.Start();
@@ -131,18 +143,18 @@ public class EditorMain : MonoBehaviour
         SetRichPresence("Staring at the main menu", "icon", "BrickBuilder Icon");
     }
 
-    public void SaveMap (string path = null) {
+    public void SaveMap (string path = null, bool bbData = true) {
         if (!MapIsLoaded) return;
         if (path == null) {
             // show a file dialog
-            string savePath = StandaloneFileBrowser.SaveFilePanel("Save Map", "", LoadedMap.Name, MapExtensions);
+            string savePath = StandaloneFileBrowser.SaveFilePanel("Save Map", "", LoadedMap.Name, SaveMapExtensions);
             // make sure a file was selected
             if (savePath != "") {
                 mapStopwatch.Start();
                 string extension = Path.GetExtension(savePath);
                 Map.MapVersion mv = Map.MapVersion.BrickBuilder;
                 if (extension == ".brk") mv = Map.MapVersion.v2;
-                MapExporter.Export(LoadedMap, savePath, mv);
+                MapExporter.Export(LoadedMap, savePath, mv, bbData);
                 mapStopwatch.Stop();
                 UnityEngine.Debug.Log($"Saved {LoadedMap.Bricks.Count} bricks in " + mapStopwatch.ElapsedMilliseconds + " ms");
             }
@@ -151,10 +163,16 @@ public class EditorMain : MonoBehaviour
             string extension = Path.GetExtension(path);
             Map.MapVersion mv = Map.MapVersion.BrickBuilder;
             if (extension == ".brk") mv = Map.MapVersion.v2;
-            MapExporter.Export(LoadedMap, path, mv);
+            MapExporter.Export(LoadedMap, path, mv, bbData);
             mapStopwatch.Stop();
             UnityEngine.Debug.Log($"Saved {LoadedMap.Bricks.Count} bricks in " + mapStopwatch.ElapsedMilliseconds + " ms");
         }
+    }
+
+    public string SaveMapDialog () {
+        if (!MapIsLoaded) return "";
+        string savePath = StandaloneFileBrowser.SaveFilePanel("Save Map", "", LoadedMap.Name, SaveMapExtensions);
+        return savePath;
     }
 
     public void NewMap () {
@@ -172,7 +190,7 @@ public class EditorMain : MonoBehaviour
         if (!Directory.Exists(autosavePath)) {
             Directory.CreateDirectory(autosavePath);
         }
-        string fileName = $"AUTOSAVE " + LoadedMap.Name + ".brk";
+        string fileName = $"AUTOSAVE " + LoadedMap.Name + ".bb";
         MapExporter.Export(LoadedMap, autosavePath + fileName, Map.MapVersion.BrickBuilder);
     }
 
