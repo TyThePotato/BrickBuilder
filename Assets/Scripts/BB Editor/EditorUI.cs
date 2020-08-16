@@ -158,8 +158,8 @@ public class EditorUI : MonoBehaviour
         };
         BBInputManager.Controls.EditorKeys.Copy.performed += ctx => CopySelection();
         BBInputManager.Controls.EditorKeys.Paste.performed += ctx => PasteSelection();
-        BBInputManager.Controls.EditorKeys.Undo.performed += ctx => Undo();
-        BBInputManager.Controls.EditorKeys.Redo.performed += ctx => Redo();
+        //BBInputManager.Controls.EditorKeys.Undo.performed += ctx => Undo();
+        //BBInputManager.Controls.EditorKeys.Redo.performed += ctx => Redo();
         BBInputManager.Controls.EditorKeys.Translate.performed += ctx => ChangeGizmo(0);
         BBInputManager.Controls.EditorKeys.Scale.performed += ctx => ChangeGizmo(1);
         BBInputManager.Controls.EditorKeys.Rotate.performed += ctx => ChangeGizmo(2);
