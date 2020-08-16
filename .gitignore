@@ -15,8 +15,8 @@
 !/[Aa]ssets/**/*.meta
 
 # Exclude BA Buildscripts folder
-/[Aa]ssets/Scripts/Build Automator
-/[Aa]ssets/Scripts/Build Automator.meta
+/[Aa]ssets/Scripts/BA
+/[Aa]ssets/Scripts/BA.meta
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
