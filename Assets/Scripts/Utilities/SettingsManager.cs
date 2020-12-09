@@ -55,6 +55,7 @@ public class Settings {
     public int Framelimit = 60; // framelimit
     public bool Autosave = true; // automatically save the map at a specified interval
     public int AutosaveRate = 10; // how often to autosave the map (in minutes)
+    public bool UIBlur = true; // enable ui blurring or whatever
     public int ScreenshotSizeMultiplier = 1; // supersizes screenshots
     public bool DiscordRP = false; // Discord Rich Presence
 

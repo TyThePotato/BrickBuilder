@@ -43,7 +43,6 @@ public class CustomModelHelper : MonoBehaviour
     }
 
     static IEnumerator GetModel(string id, System.Action<Mesh> callback) {
-        Debug.Log("joe");
         Mesh returnMesh = null;
         if (File.Exists(cacheFolder + id + ".obj")) {
             // load model from cache

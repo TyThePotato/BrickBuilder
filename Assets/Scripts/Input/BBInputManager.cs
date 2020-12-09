@@ -9,7 +9,6 @@ public class BBInputManager : MonoBehaviour
 {
     public static BBControls Controls;
     public static bool ControlsEnabled = false;
-    public static bool ForceDisable = false;
 
     public static KeyRebindEvent keyRebinded = new KeyRebindEvent();
 
@@ -68,18 +67,16 @@ public class BBInputManager : MonoBehaviour
         return (SettingsManager.Settings.EnabledHotkeys[index], SettingsManager.Settings.HotkeyPaths[index]);
     }
 
-    public static void SetControls (bool value, bool force = false) {
+    public static void SetControls (bool value) {
         if (value) {
-            if (ForceDisable && !force) return;
-            EnableControls(force);
+            EnableControls();
             LoadSavedControlToggles(); // disable controls that should be disabled
         } else {
-            DisableControls(force);
+            DisableControls();
         }
     }
 
-    public static void EnableControls (bool force = false) {
-        if (ForceDisable && !force) return;
+    public static void EnableControls () {
         Controls.Enable();
         LoadSavedControlToggles(); // disable controls that should be disabled
         ControlsEnabled = true;
@@ -87,7 +84,6 @@ public class BBInputManager : MonoBehaviour
     }
 
     public static void DisableControls (bool force = false) {
-        if (force) ForceDisable = true;
         Controls.Disable();
         ControlsEnabled = false;
         Debug.Log("Disabled Controls");

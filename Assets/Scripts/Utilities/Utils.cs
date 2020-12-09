@@ -20,7 +20,8 @@ namespace Utils {
         } 
 
         public static Vector3 CorrectScale (Vector3 Scale, int Rotation) {
-            if (Rotation == 0 || Rotation == 180) {
+            int rot = Rotation.Mod(360);
+            if (rot == 0 || rot == 180) {
                 return Scale;
             } else {
                 return new Vector3(Scale.y, Scale.x, Scale.z);
@@ -149,31 +150,22 @@ namespace Utils {
             switch (angle) {
                 case 0:
                     return new Vector3(0, 0, 1);
-                    break;
                 case 45:
                     return new Vector3(1, 0, 1);
-                    break;
                 case 90:
                     return new Vector3(1, 0, 0);
-                    break;
                 case 135:
                     return new Vector3(1, 0, -1);
-                    break;
                 case 180:
                     return new Vector3(0, 0, -1);
-                    break;
                 case 225:
                     return new Vector3(-1, 0, -1);
-                    break;
                 case 270:
                     return new Vector3(-1, 0, 0);
-                    break;
                 case 315:
                     return new Vector3(-1, 0, 1);
-                    break;
                 case 360:
                     return new Vector3(0, 0, 1);
-                    break;
             }
             return Vector3.zero;
         }
@@ -254,6 +246,13 @@ namespace Utils {
             textEditor.multiline = true;
             textEditor.Paste();
             return textEditor.text;
+        }
+
+        public static string V3ToBH (Vector3 position, Vector3 scale) {
+            Vector3 pfc = position;
+            pfc.x *= -1;
+            pfc -= scale/2;
+            return $"({pfc.x} {pfc.z} {pfc.y})";
         }
     }
 

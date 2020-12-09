@@ -22,6 +22,9 @@ public class EditorUI : MonoBehaviour
     public Canvas MainCanvas;
     public CanvasScaler MainCanvasScaler;
 
+    public Material UIBlurMaterial;
+    public float UIBlurRadius = 5f;
+
     public Image[] MenuButtons;
     public GameObject[] ToolbarButtons;
 
@@ -29,18 +32,41 @@ public class EditorUI : MonoBehaviour
     public RectTransform AxisGizmo;
     public TMP_Text EditorInfo;
 
-    public Sprite SelectedMenuButtonSprite;
-    public Sprite UnselectedMenuButtonSprite;
+    //public Sprite SelectedMenuButtonSprite;
+    //public Sprite UnselectedMenuButtonSprite;
+    public Color SelectedMenuButtonColor;
+    public Color UnselectedMenuButtonColor;
 
     public GameObject InputBlocker;
 
     public AddToGroupMenu groupMenu;
     public BrickGroup[] groupMenuGroups;
 
+    public Image paintbrushBristles;
+
     public GameObject avatarImporterGO;
     public AvatarImporter avatarImporter;
     public TMP_InputField avatarIDField;
     public Toggle avatarToolToggle;
+
+    public GameObject imageImporterGO;
+    public ImageImporter imageImporter;
+    public TMP_Text imageLabel;
+    public RawImage imagePreview;
+    public TMP_InputField[] imagePositionFields;
+    public TMP_InputField[] imageScaleFields;
+    public TMP_Text imageOrientationButtonLabel;
+    public TMP_Text imageResolutionLabel;
+    public TMP_InputField[] imageResolutionFields;
+    public TMP_Text heightmapLabel;
+    public RawImage heightmapPreview;
+    public TMP_InputField heightmapScale;
+
+    public GameObject TeamMenuGO;
+    public Transform TeamElementsRoot;
+    public GameObject TeamElementTemplate;
+    public List<TeamElement> Teams;
+    private TeamElement selectedTeam; //shh
 
     public RectTransform TransformPropertyLabel;
     public TMP_Text TransformPropertyLabelAxis;
@@ -59,6 +85,10 @@ public class EditorUI : MonoBehaviour
     public float SelectionDistance = 500f;
 
     public TransformGizmo gizmo;
+
+    // confirmation
+    public GameObject ConfirmationMenu;
+    public string ConfirmationAction;
 
     // hierarchy stuff
 
@@ -111,6 +141,8 @@ public class EditorUI : MonoBehaviour
     public Slider AutosaveRateSlider;
     public TMP_Text AutosaveRateLabel;
 
+    public Toggle UIBlurToggle;
+
     public Toggle FramelimiterToggle;
     public TMP_InputField FramelimiterField;
 
@@ -125,14 +157,25 @@ public class EditorUI : MonoBehaviour
     public TMP_Text PlayerPathLabel;
     public TMP_Text ServerPathLabel;
 
+    // ye
+
+    public GameObject FileHistoryPanel;
+    public Transform FileHistoryRoot;
+    public GameObject[] HistoryElements;
+    public GameObject FileHistoryElementTemplate;
+
     // not ui stuff
     public PostProcessLayer ppl; // for screenshots
     public PostProcessVolume ppv; // for screenshots
+
+    private bool inputLocked;
 
     private int frameCount = 0;
     private float dt = 0.0f;
     public float fps = 0.0f;
     public float updateRate = 4.0f;
+
+    private bool permissionToQuit = false;
 
     private void Awake() {
         // singleton
@@ -143,9 +186,12 @@ public class EditorUI : MonoBehaviour
         }
 
         // events
+        Application.wantsToQuit += WantsToQuit;
+
         main.MapLoaded.AddListener(InitializeUI);
         ColorPicker.colorChanged.AddListener(ColorChanged);
         BBInputManager.keyRebinded.AddListener(KeyRebinded);
+        SettingsManager.SettingsChanged.AddListener(ApplySettings);
 
         // hotkeys
         BBInputManager.Controls.EditorKeys.NewBrick.performed += ctx => NewBrickButton();
@@ -170,6 +216,9 @@ public class EditorUI : MonoBehaviour
         BBInputManager.Controls.Main.SelectionZ.performed += ctx => MoveSelectionWithKeys(2, ctx.ReadValue<float>());
 
         LoadPreferences();
+
+        FileHistoryManager.LoadRecentFiles();
+        PopulateRecentFiles();
     }
 
     public void Update() {
@@ -190,7 +239,7 @@ public class EditorUI : MonoBehaviour
                 BBInputManager.DisableControls();
             }
         } else {
-            if (!BBInputManager.ControlsEnabled) {
+            if (!BBInputManager.ControlsEnabled && !inputLocked) {
                 BBInputManager.EnableControls();
             }
         }
@@ -199,7 +248,11 @@ public class EditorUI : MonoBehaviour
         if (Mouse.current.leftButton.wasPressedThisFrame) { // lmb clicked
             if (!gizmo.isTransforming) { // not using handles
                 if (!EventSystem.current.IsPointerOverGameObject()) { // not over ui
-                    TrySelectBrick();
+                    if (colorPickerTarget == ColorPickerTarget.Paintbrush) { // paintbrush tool
+                        TryColorBrick(colorPicker.CurrentColor);
+                    } else { // select brick
+                        TrySelectBrick();
+                    }
                 }
             }
         }
@@ -219,17 +272,50 @@ public class EditorUI : MonoBehaviour
         }
     }
 
+    bool WantsToQuit () {
+        if (permissionToQuit) {
+            // permission to quit
+            return true;
+        } else {
+            // confirm quit
+            SetConfirmation("quit");
+            return false;
+        }
+    }
+
+    void ApplySettings () {
+        UIBlurMaterial.SetFloat("_Radius", SettingsManager.Settings.UIBlur ? UIBlurRadius : 0);
+    }
+
+    public void PopulateRecentFiles () {
+        HistoryElements = new GameObject[FileHistoryManager.RecentFiles.Count];
+        for (int i = 0; i < FileHistoryManager.RecentFiles.Count; i++) {
+            string path = FileHistoryManager.RecentFiles[i].path;
+            GameObject hego = Instantiate(FileHistoryElementTemplate);
+            hego.transform.SetParent(FileHistoryRoot, false);
+            HistoryElement he = hego.GetComponent<HistoryElement>();
+            he.SetInfo(path, FileHistoryManager.RecentFiles[i].timestamp);
+            he.ElementButton.onClick.AddListener(delegate{main.OpenMap(path);});
+        }
+    }
+
     public void InitializeUI () {
+        Destroy(FileHistoryPanel);
         PopulateHierarchy();
+        PopulateTeams();
+
+        AxisGizmo.gameObject.SetActive(true);
     }
 
     public void ChangeMenu (int index) {
         for (int i = 0; i < MenuButtons.Length; i++) {
             if (i == index) {
-                MenuButtons[i].sprite = SelectedMenuButtonSprite;
+                //MenuButtons[i].sprite = SelectedMenuButtonSprite;
+                MenuButtons[i].color = SelectedMenuButtonColor;
                 ToolbarButtons[i].SetActive(true);
             } else {
-                MenuButtons[i].sprite = UnselectedMenuButtonSprite;
+                //MenuButtons[i].sprite = UnselectedMenuButtonSprite;
+                MenuButtons[i].color = UnselectedMenuButtonColor;
                 ToolbarButtons[i].SetActive(false);
             }    
         }
@@ -251,8 +337,9 @@ public class EditorUI : MonoBehaviour
             for (int i = 0; i < SelectedElements.Count; i++) {
                 if (SelectedElements[i].Type == Map.ElementType.Brick) {
                     Brick b = SelectedElements[i].AssociatedObject as Brick;
-                    b.gameObject.transform.position = (b.gameObject.transform.position + m); // might need to round?
-                    b.Position = BB.ToBB(b.gameObject.transform.position, b.Scale);
+                    b.gameObject.transform.position = b.gameObject.transform.position + m; // might need to round?
+                    b.Position = b.gameObject.transform.position;
+                    //b.Position = BB.ToBB(b.gameObject.transform.position, b.Scale);
                 }
             }
             UpdateInspector();
@@ -263,7 +350,8 @@ public class EditorUI : MonoBehaviour
     // File buttons
 
     public void NewFileButton() {
-        main.NewMap();
+        //main.NewMap();
+        SetConfirmation("new");
     }
 
     public void OpenFileButton (bool ui) {
@@ -271,11 +359,13 @@ public class EditorUI : MonoBehaviour
             if (Keyboard.current.leftCtrlKey.isPressed) {
                 FileInputField(0);
             } else {
-                main.OpenMap();
+                //main.OpenMap();
+                SetConfirmation("open");
             }
             
         } else {
-            main.OpenMap();
+            //main.OpenMap();
+            SetConfirmation("open");
         }
     }
 
@@ -317,6 +407,7 @@ public class EditorUI : MonoBehaviour
     }
 
     public void FileInputFieldEnter () {
+        FileField.gameObject.SetActive(false);
         if (FileFieldType == 0) {
             main.OpenMap(FileField.text);
         } else if (FileFieldType == 1) {
@@ -328,7 +419,12 @@ public class EditorUI : MonoBehaviour
                 ShowSaveOptions();
             }
         }
-        FileField.gameObject.SetActive(false);
+    }
+
+    // edit buttons
+
+    public void PaintbrushTool () {
+        ShowColorPicker(6);
     }
 
     // Tools buttons
@@ -404,6 +500,58 @@ public class EditorUI : MonoBehaviour
         }
     }
 
+    public void TryColorBrick (Color color) {
+        RaycastHit hit;
+        Ray ray = MapBuilder.instance.mainCam.ScreenPointToRay(Mouse.current.position.ReadValue());
+        if (Physics.Raycast(ray, out hit, SelectionDistance, SelectionLayerMask)) {
+            // hit a brick
+            BrickGO bg = hit.collider.GetComponent<BrickGO>();
+            bg.brick.BrickColor = color;
+            MapBuilder.instance.UpdateBrickColor(bg.brick);
+        }
+    }
+
+    // confirmation
+
+    public void SetConfirmation (string type) {
+        ConfirmationAction = type;
+        ConfirmationMenu.SetActive(true);
+
+        if (type == "open" || type == "new") {
+            if (main.MapIsLoaded) {
+                if (main.LoadedMap.Bricks.Count == 0) {
+                    // empty map, dont bother with confirmation
+                    ConfirmationAccept();
+                }
+            } else {
+                // no map loaded, dont bother with confirmation
+                ConfirmationAccept();
+            }
+        }
+    }
+
+    public void ConfirmationAccept () {
+        if (ConfirmationAction == "new") {
+            // new
+            main.NewMap();
+        } else if (ConfirmationAction == "open") {
+            // open
+            main.OpenMap();
+        } else if (ConfirmationAction == "quit") {
+            // stop it
+            permissionToQuit = true;
+            Application.Quit();
+        }
+
+        ConfirmationAction = "";
+        ConfirmationMenu.SetActive(false);        
+    }
+
+    public void ConfirmationDecline () {
+        ConfirmationAction = "";
+        ConfirmationMenu.SetActive(false);
+    }
+
     // Hierarchy
 
     public void PopulateHierarchy () {
@@ -426,6 +574,7 @@ public class EditorUI : MonoBehaviour
 
             GameObject element = Instantiate(HierarchyElementTemplate);
             HierarchyElement he = element.GetComponent<HierarchyElement>();
+            
 
             int iconID = 2 + (int)b.Shape;
             he.Set(Map.ElementType.Brick, HierarchyIcons[iconID], b.Name, element, b);
@@ -498,6 +647,13 @@ public class EditorUI : MonoBehaviour
         ClearGizmo();
         SelectAllElements();
         DeleteSelection();
+
+        // delete all teams
+        for (int i = 0; i < Teams.Count; i++) {
+            Destroy(Teams[i].gameObject);
+            Destroy(Teams[i]);
+        }
+        Teams.Clear();
 
         // remove world element
         RemoveHierarchyElement(HierarchyElements[-1], true);
@@ -685,6 +841,12 @@ public class EditorUI : MonoBehaviour
         }
     }
 
+    public void PopulateTeams () {
+        for (int i = 0; i < main.LoadedMap.Teams.Count; i++) {
+            CreateTeam(main.LoadedMap.Teams[i].Name, main.LoadedMap.Teams[i].TeamColor);
+        }
+    }
+
     public void ShowGroupMenu () {
         if (main.LoadedMap.Groups.Count > 0) {
             groupMenuGroups = main.LoadedMap.Groups.ToArray();
@@ -741,8 +903,16 @@ public class EditorUI : MonoBehaviour
         string id = avatarIDField.text;
         if (!string.IsNullOrEmpty(id)) {
             AvatarRoot ar = avatarImporter.GetAvatarFromID(id);
-            if (ar != null)
-                avatarImporter.BuildAvatar(ar, Vector3.zero, avatarToolToggle.isOn);
+            if (ar != null) {
+                // calculate target position
+                Vector3 avatarPos = MapBuilder.instance.mainCam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, 10f)).Round();
+                // with raycasting
+                RaycastHit hit;
+                if (Physics.Raycast(MapBuilder.instance.mainCam.transform.position, MapBuilder.instance.mainCam.transform.forward, out hit, SelectionDistance, BrickRaycastMask)) {
+                    avatarPos = hit.point.Round();
+                }
+                avatarImporter.BuildAvatar(ar, avatarPos, avatarToolToggle.isOn);
+            }
             HideAvatarMenu();
         }
     }
@@ -753,9 +923,167 @@ public class EditorUI : MonoBehaviour
         SetInputEnabled(true);
     }
 
+    // show menu
+    public void ShowImageMenu () {
+        imageImporterGO.SetActive(true);
+        SetInputEnabled(false);
+    }
+
+    // changes image orientation
+    public void ToggleImageOrientation () {
+        imageImporter.Orientation = imageImporter.Orientation == 0 ? 1 : 0; // toggle orientation
+        imageOrientationButtonLabel.SetText(imageImporter.Orientation == 0 ? "Flat" : "Standing");
+    }
+
+    // resize image
+    public void ResizeImage () {
+        try {
+            int x = int.Parse(imageResolutionFields[0].text, CultureInfo.InvariantCulture);
+            int y = int.Parse(imageResolutionFields[1].text, CultureInfo.InvariantCulture);
+            imageImporter.ResizeImage(x,y);
+
+            // post resize
+            imageResolutionLabel.SetText($"Image Resolution (~{x*y} Bricks)");
+            // reload image preview?
+        } catch (Exception e) {
+            Debug.LogException(e);
+        }
+    }
+
+    // displays open file dialog for image
+    public void LoadImageDialog (bool hm) {
+        string typeLabel = hm ? "Heightmap" : "Image";
+        string image = StandaloneFileBrowser.OpenFilePanel("Open " + typeLabel, "", "png", false)[0];
+        if (image != "") {
+            imageImporter.LoadImage(image, hm);
+            UpdateImagePreviewInfo();
+        }
+    }
+
+    // updates preview info
+    public void UpdateImagePreviewInfo () {
+        if (imageImporter.importedImage != null) {
+            // update image info
+            imageLabel.SetText($"Image ({imageImporter.importedImage.name})");
+            imagePreview.texture = imageImporter.importedImage;
+            imageResolutionFields[0].SetTextWithoutNotify(imageImporter.importedImage.width.ToString(CultureInfo.InvariantCulture));
+            imageResolutionFields[1].SetTextWithoutNotify(imageImporter.importedImage.height.ToString(CultureInfo.InvariantCulture));
+            imageResolutionLabel.SetText($"Image Resolution (~{imageImporter.importedImage.width * imageImporter.importedImage.height} Bricks)");
+        }
+        if (imageImporter.importedHeightmap != null) {
+            // update heightmap info
+            heightmapLabel.SetText($"Heightmap ({imageImporter.importedHeightmap.name})");
+            heightmapPreview.texture = imageImporter.importedHeightmap;
+        }
+    }
+
+    // build image
+    public void ImportImage () {
+        if (imageImporter.importedImage == null) return;
+        try {
+            // set variables
+            Vector3 pos = new Vector3(
+                float.Parse(imagePositionFields[0].text, CultureInfo.InvariantCulture),
+                float.Parse(imagePositionFields[1].text, CultureInfo.InvariantCulture),
+                float.Parse(imagePositionFields[2].text, CultureInfo.InvariantCulture)
+            );
+            Vector3 size = new Vector3(
+                float.Parse(imageScaleFields[0].text, CultureInfo.InvariantCulture),
+                float.Parse(imageScaleFields[1].text, CultureInfo.InvariantCulture),
+                float.Parse(imageScaleFields[2].text, CultureInfo.InvariantCulture)
+            );
+            float heightScale = 0;
+            if (heightmapScale.text != "")
+                heightScale = float.Parse(heightmapScale.text, CultureInfo.InvariantCulture);
+
+            imageImporter.Position = pos;
+            imageImporter.Size = size;
+            imageImporter.HeightmapScale = heightScale;
+
+            // build image
+            imageImporter.BuildImage();
+
+            // hide ui
+            HideImageMenu();
+        } catch (Exception e) {
+            Debug.LogException(e);
+        }
+    }
+
+    public void ResetImageImporterParameters () {
+        imageLabel.SetText("Image (Not Loaded)");
+        imagePreview.texture = null;
+        imageResolutionLabel.SetText("Image Resolution (N/A)");
+        imageResolutionFields[0].SetTextWithoutNotify("");
+        imageResolutionFields[1].SetTextWithoutNotify("");
+        heightmapLabel.SetText("Heightmap (Not Loaded)");
+        heightmapPreview.texture = null;
+    }
+
+    // hide menu
+    public void HideImageMenu () {
+        ResetImageImporterParameters();
+        imageImporterGO.SetActive(false);
+        SetInputEnabled(true);
+    }
+
+    public void ShowTeamMenu () {
+        TeamMenuGO.SetActive(true);
+        SetInputEnabled(false);
+    }
+
+    // invoked from UI
+    public void NewTeam () {
+        CreateTeam("New Team", Color.white);
+    }
+
+    private void CreateTeam (string name, Color color) {
+        GameObject teamGO = Instantiate(TeamElementTemplate);
+        teamGO.transform.SetParent(TeamElementsRoot, false);
+
+        TeamElement teamElement = teamGO.GetComponent<TeamElement>();
+        teamElement.TeamName = name;
+        teamElement.TeamColor = color;
+        teamElement.ApplySettings();
+
+        //teamElement.ElementPanel.color = new Color(1f, 1f, 1f, 0.3f);
+        //teamElement.NameField.SetTextWithoutNotify("New Team");
+        //teamElement.ColorImage.color = new Color(1f, 1f, 1f, 1f);
+
+        teamElement.NameField.onEndEdit.AddListener(delegate {UpdateTeamName(teamElement);});
+        teamElement.ColorButton.onClick.AddListener(delegate{selectedTeam = teamElement; ShowColorPicker(5);});
+        teamElement.DeleteButton.onClick.AddListener(delegate {RemoveTeam(teamElement);});
+
+        Teams.Add(teamElement);
+    }
+
+    public void RemoveTeam (TeamElement team) {
+        Teams.Remove(team);
+        Destroy(team.gameObject);
+        Destroy(team);
+
+        selectedTeam = null;
+        HideColorPicker();
+    }
+
+    public void UpdateTeamName (TeamElement team) {
+        if (string.IsNullOrWhiteSpace(team.NameField.text)) {
+            team.NameField.SetTextWithoutNotify(team.TeamName);
+        }
+        team.TeamName = team.NameField.text;
+    }
+
+    public void HideTeamMenu () {
+        TeamMenuGO.SetActive(false);
+        SetInputEnabled(true);
+    }
+
     public void SetInputEnabled (bool enabled) {
         InputBlocker.SetActive(!enabled);
-        BBInputManager.SetControls(enabled, true);
+        BBInputManager.SetControls(enabled);
+        inputLocked = !enabled;
+
+        if (!enabled) HideColorPicker();
     }
 
     // Inspector
@@ -808,6 +1136,7 @@ public class EditorUI : MonoBehaviour
                 Brick b = SelectedElements[0].AssociatedObject as Brick;
                 BrickInspectorElements[0].SetString(b.Name);
                 BrickInspectorElements[1].SetVector3(b.Position);
+                BrickInspectorElements[1].SetExtraLabel(Helper.V3ToBH(b.Position, b.Scale));
                 BrickInspectorElements[2].SetVector3(b.Scale);
                 BrickInspectorElements[3].SetInt(b.Rotation);
                 BrickInspectorElements[4].SetColor(b.BrickColor, true);
@@ -816,6 +1145,8 @@ public class EditorUI : MonoBehaviour
                 BrickInspectorElements[6].SetDropdown((int)b.Shape);
                 BrickInspectorElements[7].SetBool(b.CollisionEnabled);
                 BrickInspectorElements[8].SetString(b.Model);
+                //BrickInspectorElements[9].SetBool(b.Clickable);
+                //BrickInspectorElements[9].SetFloat(b.ClickDistance);
 
                 // set color picker target
                 colorPickerTarget = ColorPickerTarget.Brick;
@@ -866,7 +1197,6 @@ public class EditorUI : MonoBehaviour
                         Vector3 attemptedScale = BrickInspectorElements[2].GetVector3();
                         b.Scale = attemptedScale.Clamp(Vector3.zero, attemptedScale); // disallow negative scale values
                         b.ClampSize();
-                        UpdateInspector(); // update inspector after just incase
                         break;
                     case 3:
                         b.Rotation = BrickInspectorElements[3].GetInt().Mod(360); // keep rotation between 0-359
@@ -893,6 +1223,10 @@ public class EditorUI : MonoBehaviour
                         } else {
                             BrickInspectorElements[8].SetString(b.Model); // reset inputfield to original model
                         }
+                        break;
+                    case 9:
+                        //b.Clickable = BrickInspectorElements[9].GetBool();
+                        //b.ClickDistance = BrickInspectorElements[9].GetFloat();
                         break;
                 }
 
@@ -925,6 +1259,8 @@ public class EditorUI : MonoBehaviour
                 MapBuilder.instance.UpdateEnvironment(main.LoadedMap);
             }
         }
+
+        UpdateInspector();
 
         ec.oldBricks = originalBricks.ToArray();
         ec.oldGroups = originalGroups.ToArray();
@@ -965,9 +1301,11 @@ public class EditorUI : MonoBehaviour
             colorPicker.SetColor(main.LoadedMap.BaseplateColor, false); // do not invoke color changed event
         } else if (colorPickerTarget == ColorPickerTarget.Sky) {
             colorPicker.SetColor(main.LoadedMap.SkyColor, false); // do not invoke color changed event
+        } else if (colorPickerTarget == ColorPickerTarget.Team) {
+            colorPicker.SetColor(selectedTeam.TeamColor, false);
         }
 
-            colorPickerGO.SetActive(true);
+        colorPickerGO.SetActive(true);
     }
 
     public void HideColorPicker () {
@@ -1000,9 +1338,12 @@ public class EditorUI : MonoBehaviour
             WorldInspectorElements[2].SetColor(color, true);
             MapBuilder.instance.UpdateEnvironment(main.LoadedMap);
         } else if (colorPickerTarget == ColorPickerTarget.Team) {
-            //TODO
+            if (selectedTeam != null) {
+                selectedTeam.TeamColor = color;
+                selectedTeam.ApplySettings(true);
+            }
         } else if (colorPickerTarget == ColorPickerTarget.Paintbrush) {
-            //TODO
+            paintbrushBristles.color = color;
         }
     }
 
@@ -1032,15 +1373,12 @@ public class EditorUI : MonoBehaviour
         if (Physics.Raycast(MapBuilder.instance.mainCam.transform.position, MapBuilder.instance.mainCam.transform.forward, out hit, SelectionDistance, BrickRaycastMask)) {
             brickPos = hit.point.Round();
         }
-        brickPos.x += 1; // to prevent bricks from like being in walls ya know
-        brickPos.z -= 2; // to prevent bricks from like being in walls ya know
-        brickPos.x *= -1; // flip x axis;
 
         // create brick object with default values
         Brick b = new Brick();
         b.Name = "New Brick";
-        b.Position = brickPos.SwapYZ();
-        b.Scale = new Vector3(2, 4, 1);
+        b.Position = brickPos;
+        b.Scale = Vector3.one;
         b.BrickColor = Color.gray;
         b.Transparency = 1f;
         int id = ++main.LoadedMap.lastID;
@@ -1153,13 +1491,16 @@ public class EditorUI : MonoBehaviour
                 main.LoadedMap.MapElements.Remove(g.ID);
             }
         }
-        SelectedElements.Clear();
-        UpdateInspector();
-        HideColorPicker();
+        if (removedBricks.Count > 0 || removedGroups.Count > 0) {
+            SelectedElements.Clear();
+            UpdateInspector();
+            HideColorPicker();
 
-        er.bricksRemoved = removedBricks.ToArray();
-        er.groupsRemoved = removedGroups.ToArray();
-        EditorHistory.AddToHistory(er);
+            er.bricksRemoved = removedBricks.ToArray();
+            er.groupsRemoved = removedGroups.ToArray();
+
+            EditorHistory.AddToHistory(er);
+        }
     }
 
     public void DeleteElement (int id) {
@@ -1243,11 +1584,6 @@ public class EditorUI : MonoBehaviour
         gizmo.ClearTargets();
     }
 
-    public void UnfocusInputField () {
-        //inputField.DeactivateInputField();
-        EventSystem.current.SetSelectedGameObject(null);
-    }
-
     // Settings
 
     public void ShowPreferences () {
@@ -1275,6 +1611,7 @@ public class EditorUI : MonoBehaviour
         SettingsManager.Settings.Autosave = AutosaveToggle.isOn;
         SettingsManager.Settings.AutosaveRate = (int)AutosaveRateSlider.value;
         main.ResetAutosaveRate();
+        SettingsManager.Settings.UIBlur = UIBlurToggle.isOn;
         SettingsManager.Settings.Framelimiter = FramelimiterToggle.isOn;
         SettingsManager.Settings.Framelimit = int.Parse(FramelimiterField.text, CultureInfo.InvariantCulture);
         SettingsManager.Settings.ScreenshotSizeMultiplier = (int)ScreenshotSizeMultiplierSlider.value;
@@ -1324,6 +1661,9 @@ public class EditorUI : MonoBehaviour
 
         AutosaveRateSlider.SetValueWithoutNotify(SettingsManager.Settings.AutosaveRate);
         AutosaveRateLabel.text = SettingsManager.Settings.AutosaveRate.ToString();
+
+        UIBlurMaterial.SetFloat("_Radius", SettingsManager.Settings.UIBlur ? UIBlurRadius : 0);
+        UIBlurToggle.SetIsOnWithoutNotify(SettingsManager.Settings.UIBlur);
 
         FramelimiterToggle.SetIsOnWithoutNotify(SettingsManager.Settings.Framelimiter);
         //FramelimiterLabel.text = "Framelimiter (" + Screen.currentResolution.refreshRate + " FPS)";

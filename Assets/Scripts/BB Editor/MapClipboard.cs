@@ -67,6 +67,7 @@ public struct BrickData {
     public float Transparency;
     public bool Collision;
     public bool Clickable;
+    public float ClickDist;
     public int Shape;
     public string Model;
     [NonSerialized]
@@ -81,6 +82,7 @@ public struct BrickData {
         Transparency = brick.Transparency;
         Collision = brick.CollisionEnabled;
         Clickable = brick.Clickable;
+        ClickDist = brick.ClickDistance;
         Shape = (int)brick.Shape;
         Model = brick.Model;
         ID = brick.ID;
@@ -96,12 +98,26 @@ public struct BrickData {
         b.Transparency = Transparency;
         b.CollisionEnabled = Collision;
         b.Clickable = Clickable;
+        b.ClickDistance = ClickDist;
         b.Shape = (Brick.ShapeType)Shape;
         b.Model = Model;
         if (includeId) b.ID = ID;
 
         b.ScuffedScale = b.Rotation != 0 && b.Rotation != 180;
         return b;
+    }
+
+    // same as the function in Brick.cs
+    public void ConvertTransformToUnity () {
+        Vector3 pos = Position.SwapYZ() + Scale.SwapYZ() / 2; // Brick-Hill positions are based around some corner of the brick, while Unity positions are based around the pivot point (usually center) of the transform
+        pos.x *= -1; // Flip x axis
+        Position = pos;
+
+        Scale = Scale.SwapYZ();
+        if (Rotation != 0 && Rotation != 180) Scale = Scale.SwapXZ();
+
+        Rotation = Rotation * -1; // Invert rotation
+        Rotation = Rotation.Mod(360); // keep rotation between 0-359
     }
 }
 

@@ -18,7 +18,7 @@ public class BrickShape : MonoBehaviour
         if (MapBuilder.instance.ShapeConstraints.TryGetValue(brick.Shape, out ShapeSizeConstraint ssc)) {
             size = size.Clamp(ssc.min, ssc.max);
         }
-        size = BB.CorrectScale(size, brick.Rotation).SwapYZ(); // correct scale based on rotation then swap y and z to convert brick hill xyz to unity xyz
+        //size = BB.CorrectScale(size, brick.Rotation).SwapYZ(); // correct scale based on rotation then swap y and z to convert brick hill xyz to unity xyz
 
         if (brick.Shape == Brick.ShapeType.cube) {
             // 0 = brick
@@ -39,7 +39,7 @@ public class BrickShape : MonoBehaviour
             elements[1].localPosition = new Vector3(size.x / 2 - 0.5f, 0, 0);
         } else if (brick.Shape == Brick.ShapeType.spawnpoint) {
             // 0 = spawnpoint
-            elements[0].localScale = brick.Scale.SwapYZ();
+            elements[0].localScale = size;
         } else if (brick.Shape == Brick.ShapeType.arch) {
             // 0 = archway, 1 = top, 2 = side 1, 3 = side 2
             elements[0].localScale = new Vector3(size.x, size.y - 0.3f, size.z - 2);
@@ -52,7 +52,7 @@ public class BrickShape : MonoBehaviour
             elements[3].localPosition = new Vector3(0, -size.y / 2, -size.z / 2 + 0.5f);
         } else if (brick.Shape == Brick.ShapeType.dome) {
             // 0 = dome
-            elements[0].localScale = brick.Scale.SwapYZ();
+            elements[0].localScale = size;
         } else if (brick.Shape == Brick.ShapeType.bars) {
             // 0 = bar segment, 1 = base, 2 = pole, 3 = top
             int segmentCountX = Mathf.CeilToInt(size.x);
@@ -65,7 +65,7 @@ public class BrickShape : MonoBehaviour
                     Destroy(segments[i]);
                 }
             }
-            segments = new GameObject[segmentCountX*segmentCountZ];
+            segments = new GameObject[segmentCountX*segmentCountZ+1];
 
             elements[0].localPosition = new Vector3(firstPosX, 0, firstPosZ);
             elements[1].localPosition = new Vector3(0, -size.y / 2, 0);

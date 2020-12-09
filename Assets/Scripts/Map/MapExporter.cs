@@ -94,6 +94,12 @@ public class MapExporter : MonoBehaviour
                     s.WriteLine(ExportBrick(input.Bricks[i]));
                 }
             }
+
+            for (int i = 0; i < EditorUI.instance.Teams.Count; i++) {
+                s.WriteLine(">TEAM " + EditorUI.instance.Teams[i].TeamName);
+                Color c = EditorUI.instance.Teams[i].TeamColor;
+                s.WriteLine("\t+COLOR " + c.r.ToString(CultureInfo.InvariantCulture) + " " + c.g.ToString(CultureInfo.InvariantCulture) + " " + c.b.ToString(CultureInfo.InvariantCulture));
+            }
         }
     }
 
@@ -151,6 +157,11 @@ public class MapExporter : MonoBehaviour
             }
         }
 
+        for (int i = 0; i < EditorUI.instance.Teams.Count; i++) { 
+            Color c = EditorUI.instance.Teams[i].TeamColor;
+            output += $"\n@{ColorUtility.ToHtmlStringRGB(c)} {EditorUI.instance.Teams[i].TeamName}";
+        }
+
         // compress string and export
         if (compress) {
             byte[] compressed = CLZF2.Compress(Encoding.UTF8.GetBytes(output));
@@ -197,15 +208,21 @@ public class MapExporter : MonoBehaviour
     }
 
     private static string ExportBrick (Brick b) {
+        Vector3 bhScale = BB.CorrectScale(b.Scale.SwapYZ(), b.Rotation * -1);
+        Vector3 bhPos = b.Position.ToBB(bhScale);
+        
         // this is the long line that defines bricks
-        string export = $"{b.Position.x.ToString(CultureInfo.InvariantCulture)} {b.Position.y.ToString(CultureInfo.InvariantCulture)} {b.Position.z.ToString(CultureInfo.InvariantCulture)} {b.Scale.x.ToString(CultureInfo.InvariantCulture)} {b.Scale.y.ToString(CultureInfo.InvariantCulture)} {b.Scale.z.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.r.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.g.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.b.ToString(CultureInfo.InvariantCulture)} {b.Transparency.ToString(CultureInfo.InvariantCulture)}";
+        string export = $"{bhPos.x.ToString(CultureInfo.InvariantCulture)} {bhPos.y.ToString(CultureInfo.InvariantCulture)} {bhPos.z.ToString(CultureInfo.InvariantCulture)} {bhScale.x.ToString(CultureInfo.InvariantCulture)} {bhScale.y.ToString(CultureInfo.InvariantCulture)} {bhScale.z.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.r.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.g.ToString(CultureInfo.InvariantCulture)} {b.BrickColor.b.ToString(CultureInfo.InvariantCulture)} {b.Transparency.ToString(CultureInfo.InvariantCulture)}";
 
         export += $"\n\t+NAME {b.Name.RemoveNewlines()}"; // brick name
-        if (b.Rotation != 0) export += $"\n\t+ROT {b.Rotation.ToString(CultureInfo.InvariantCulture)}"; // rotation
+        if (b.Rotation != 0) export += $"\n\t+ROT {(b.Rotation * -1).ToString(CultureInfo.InvariantCulture)}"; // rotation
         if (b.Shape != Brick.ShapeType.cube) export += $"\n\t+SHAPE {b.Shape.ToString()}"; // shape
         if (!b.CollisionEnabled) export += $"\n\t+NOCOLLISION"; // collision
         if (!string.IsNullOrEmpty(b.Model)) export += $"\n\t+MODEL {b.Model.RemoveNewlines()}"; // model
-        if (b.Clickable) export += $"\n\t+CLICKABLE"; // clickable
+        if (b.Clickable) { // clickable
+            export += $"\n\t+CLICKABLE";
+            if (b.ClickDistance > 0f) export += " " + b.ClickDistance.ToString(CultureInfo.InvariantCulture);
+        }
 
         return export;
     }
@@ -214,7 +231,10 @@ public class MapExporter : MonoBehaviour
         string export = $"!{b.Position.x.ToString(CultureInfo.InvariantCulture)} {b.Position.y.ToString(CultureInfo.InvariantCulture)} {b.Position.z.ToString(CultureInfo.InvariantCulture)} {b.Scale.x.ToString(CultureInfo.InvariantCulture)} {b.Scale.y.ToString(CultureInfo.InvariantCulture)} {b.Scale.z.ToString(CultureInfo.InvariantCulture)} {b.Rotation.ToString(CultureInfo.InvariantCulture)} {ColorUtility.ToHtmlStringRGBA(b.BrickColor)} {((int)b.Shape).ToString("x", CultureInfo.InvariantCulture)} {b.Name}";
         if (!b.CollisionEnabled) export += $"\nNOCOLLISION"; // collision
         if (!string.IsNullOrEmpty(b.Model)) export += $"\nMODEL {b.Model.RemoveNewlines()}"; // model
-        if (b.Clickable) export += $"\nCLICKABLE"; // clickable
+        if (b.Clickable) { // clickable
+            export += $"\nCLICKABLE";
+            if (b.ClickDistance > 0f) export += " " + b.ClickDistance.ToString(CultureInfo.InvariantCulture);
+        }
         return export;
     }
 }

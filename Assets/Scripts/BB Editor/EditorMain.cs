@@ -95,6 +95,7 @@ public class EditorMain : MonoBehaviour
             string[] paths = StandaloneFileBrowser.OpenFilePanel("Open Map", "", OpenMapExtensions, false);
             // make sure a file was selected
             if (paths.Length > 0) {
+                path = paths[0];
                 mapStopwatch.Start();
                 Map mapToLoad = MapParser.Parse(paths[0]); // load the selected file
                 mapStopwatch.Stop();
@@ -110,6 +111,8 @@ public class EditorMain : MonoBehaviour
 
             LoadMap(mapToLoad);
         }
+
+        FileHistoryManager.AddToRecents(path);
     }
 
     public void LoadMap (Map map, bool clearHistory = true) {
@@ -150,6 +153,7 @@ public class EditorMain : MonoBehaviour
             string savePath = StandaloneFileBrowser.SaveFilePanel("Save Map", "", LoadedMap.Name, SaveMapExtensions);
             // make sure a file was selected
             if (savePath != "") {
+                path = savePath;
                 mapStopwatch.Start();
                 string extension = Path.GetExtension(savePath);
                 Map.MapVersion mv = Map.MapVersion.BrickBuilder;
@@ -167,6 +171,8 @@ public class EditorMain : MonoBehaviour
             mapStopwatch.Stop();
             UnityEngine.Debug.Log($"Saved {LoadedMap.Bricks.Count} bricks in " + mapStopwatch.ElapsedMilliseconds + " ms");
         }
+
+        FileHistoryManager.AddToRecents(path);
     }
 
     public string SaveMapDialog () {

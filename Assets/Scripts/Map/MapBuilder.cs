@@ -25,8 +25,8 @@ public class MapBuilder : MonoBehaviour
 
     public Dictionary<Brick.ShapeType, ShapeSizeConstraint> ShapeConstraints = new Dictionary<Brick.ShapeType, ShapeSizeConstraint> {
         { Brick.ShapeType.flag, new ShapeSizeConstraint(new Vector3(1,1,1), new Vector3(1,1,1)) },
-        { Brick.ShapeType.dome, new ShapeSizeConstraint(new Vector3(2,2,1), new Vector3(2,2,1)) },
-        { Brick.ShapeType.arch, new ShapeSizeConstraint(new Vector3(0,0,3), Math.BigVector3) },
+        { Brick.ShapeType.dome, new ShapeSizeConstraint(new Vector3(2,1,2), new Vector3(2,1,2)) },
+        { Brick.ShapeType.arch, new ShapeSizeConstraint(new Vector3(0,3,0), Math.BigVector3) },
         { Brick.ShapeType.wedge, new ShapeSizeConstraint(new Vector3(2,0,0), Math.BigVector3) }
     };
 
@@ -88,12 +88,8 @@ public class MapBuilder : MonoBehaviour
         source.brickShape = bs;
 
         // Set transform info
-        Vector3 pos = source.Position.SwapYZ() + source.Scale.SwapYZ() / 2; // Brick-Hill positions are based around some corner of the brick, while Unity positions are based around the pivot point (usually center) of the transform
-        pos.x *= -1; // Flip the x axis
-        brickGameobject.transform.position = pos;
-
-        source.Rotation = source.Rotation.Mod(360); // correct rotations >360 degrees
-        brickGameobject.transform.eulerAngles = new Vector3(0, source.Rotation * -1, 0);
+        brickGameobject.transform.position = source.Position;
+        brickGameobject.transform.eulerAngles = new Vector3(0, source.Rotation, 0);
 
         // Set Material
         for (int i = 0; i < bs.elements.Length; i++) {
@@ -105,12 +101,12 @@ public class MapBuilder : MonoBehaviour
             brickMaterials[0] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Smooth, Vector2.one, BrickShader));
             if (submeshCount > 1) {
                 if (source.Shape == Brick.ShapeType.spawnpoint) {
-                    brickMaterials[1] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Spawnpoint, BB.CorrectScale(source.Scale, source.Rotation), BrickShader));
+                    brickMaterials[1] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Spawnpoint, new Vector2(source.Scale.x, source.Scale.z), BrickShader));
                 } else {
-                    brickMaterials[1] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Stud, BB.CorrectScale(source.Scale, source.Rotation), BrickShader));
+                    brickMaterials[1] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Stud, new Vector2(source.Scale.x, source.Scale.z), BrickShader));
                 }
             }
-            if (submeshCount > 2) brickMaterials[2] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Inlet, BB.CorrectScale(source.Scale, source.Rotation), BrickShader));
+            if (submeshCount > 2) brickMaterials[2] = MaterialCache.instance.GetMaterial((source.BrickColor, source.Transparency, MaterialCache.FaceType.Inlet, new Vector2(source.Scale.x, source.Scale.z), BrickShader));
             renderer.materials = brickMaterials;
         }
 
@@ -133,27 +129,22 @@ public class MapBuilder : MonoBehaviour
             brickMaterials[0] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Smooth, Vector2.one, shaderToUse));
             if (submeshCount > 1) {
                 if (b.Shape == Brick.ShapeType.spawnpoint) {
-                    brickMaterials[1] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Spawnpoint, BB.CorrectScale(b.Scale, b.Rotation), shaderToUse));
+                    brickMaterials[1] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Spawnpoint, new Vector2(b.Scale.x, b.Scale.z), shaderToUse));
                 } else {
-                    brickMaterials[1] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Stud, BB.CorrectScale(b.Scale, b.Rotation), shaderToUse));
+                    brickMaterials[1] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Stud, new Vector2(b.Scale.x, b.Scale.z), shaderToUse));
                 }
             }
-            if (submeshCount > 2) brickMaterials[2] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Inlet, BB.CorrectScale(b.Scale, b.Rotation), shaderToUse));
+            if (submeshCount > 2) brickMaterials[2] = MaterialCache.instance.GetMaterial((b.BrickColor, b.Transparency, MaterialCache.FaceType.Inlet, new Vector2(b.Scale.x, b.Scale.z), shaderToUse));
             renderer.materials = brickMaterials;
         }
     }
 
     public void UpdateBrickTransform (Brick b) {
         // Set transform info
-        Vector3 pos = b.Position.SwapYZ() + b.Scale.SwapYZ() / 2; // Brick-Hill positions are based around some corner of the brick, while Unity positions are based around the pivot point (usually center) of the transform
-        pos.x *= -1; // Flip the x axis
-        b.gameObject.transform.position = pos;
+        b.gameObject.transform.position = b.Position;
+        b.gameObject.transform.eulerAngles = new Vector3(0, b.Rotation, 0);
 
-        b.Rotation = b.Rotation.Mod(360); // correct rotations >360 degrees
-        b.gameObject.transform.eulerAngles = new Vector3(0, b.Rotation * -1, 0);
-
-        b.CheckIfScuffed();
-
+        //b.CheckIfScuffed(); // unused?
         b.UpdateShape();
     }
 
@@ -161,6 +152,7 @@ public class MapBuilder : MonoBehaviour
         if (b.Selected) EditorUI.instance.gizmo.RemoveTarget(b.gameObject.transform); // deselect transform if brick was selected
         Destroy(b.gameObject);
         CreateBrickGameObject(b);
+        b.ClampSize();
         // reselect GO if brick was selected
         if (b.Selected) {
             b.brickGO.SetOutline(true);

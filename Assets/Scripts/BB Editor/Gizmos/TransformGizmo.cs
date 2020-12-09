@@ -423,7 +423,7 @@ namespace RuntimeGizmos
                             Vector3 difference = targetPos - originalPos;
 							difference = difference.Round(1/movementSnap);
                             target.position = originalPos + difference; // big brain time
-                            bgo.brick.Position = target.position.ToBB(bgo.brick.Scale);
+							bgo.brick.Position = target.position;
 						}
 
 						SetPivotPointOffset(movement);
@@ -463,17 +463,17 @@ namespace RuntimeGizmos
 
                             BrickGO bgo = target.GetComponent<BrickGO>();
 
-                            Vector3 scuffAdjustedScaleAmount = bgo.brick.ScuffedScale ? targetScaleAmount.SwapXZ() : targetScaleAmount;
+                            Vector3 targetScale = bgo.brick.Scale + targetScaleAmount;
 
-                            Vector3 targetScale = bgo.brick.Scale.SwapYZ() + scuffAdjustedScaleAmount;
-
-                            bgo.brick.Scale = targetScale.SwapYZ();
+                            bgo.brick.Scale = targetScale.Clamp(Vector3.zero, Utils.Math.BigVector3); // keep scale positive
                             bgo.brick.ClampSize(); // clamp size of brick if necessary
                             bgo.brick.UpdateShape(); // regenerate shape
 
                             // set position
-                            target.position = target.TransformPoint(Vector3.Scale(targetScaleAmount / 2, localAxis));
-                            bgo.brick.Position = target.position.ToBB(bgo.brick.Scale);
+							if (bgo.brick.Scale == targetScale) { // only update position if the scale actually changes
+								target.position = target.TransformPoint(Vector3.Scale(targetScaleAmount / 2, localAxis));
+								bgo.brick.Position = target.position;
+							}
 
                             bgo.ResetMaterial(); // fix material lol
 						}
@@ -531,10 +531,8 @@ namespace RuntimeGizmos
 								target.RotateAround(originalPivot, rotationAxis, rotateAmount);
 							}
 
-                            int rot = Utils.Math.Mod(Mathf.RoundToInt(target.eulerAngles.y) * -1, 360);
+                            int rot = Utils.Math.Mod(Mathf.RoundToInt(target.eulerAngles.y), 360);
                             bgo.brick.Rotation = rot; // set brick rotation
-							bgo.brick.Position = target.position.ToBB(bgo.brick.Scale); // set brick position
-                            bgo.brick.CheckIfScuffed(); // recalculate brick scale depending on rotation because bh rotation is totally scuffed, not my fault
 						}
 
 						totalRotationAmount *= Quaternion.Euler(rotationAxis * rotateAmount);

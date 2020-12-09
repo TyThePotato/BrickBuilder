@@ -29,6 +29,7 @@ Plugins.meta
 [Aa]ssets/cache/
 [Aa]ssets/autosaves/
 [Aa]ssets/settings.json
+[Aa]ssets/recentfiles.txt
 
 # Visual Studio cache directory
 .vs/

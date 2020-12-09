@@ -14,6 +14,7 @@ public class Brick
     public float Transparency = 1f; // Transparency of the brick. This might be able to be replaced with BrickColor.a
     public bool CollisionEnabled = true; // Can you collide with the brick?
     public bool Clickable = false; // Is the brick clickable?
+    public float ClickDistance; // Distance brick can be clicked from
     public ShapeType Shape = ShapeType.cube; // Brick shape
     public string Model; // ID of the asset used for the brick
 
@@ -25,6 +26,24 @@ public class Brick
     public GameObject gameObject; // the GameObject built from this brick
     public BrickGO brickGO; // BrickGO of the above gameobject
     public BrickShape brickShape; // BrickShape of the above gameobject, manages brick scaling and stuff
+
+    // Convert from BH Transform Values to Unity - Use this when reading bricks from file
+    public void ConvertTransformToUnity () {
+        Vector3 pos = Position.SwapYZ() + Scale.SwapYZ() / 2; // Brick-Hill positions are based around some corner of the brick, while Unity positions are based around the pivot point (usually center) of the transform
+        pos.x *= -1; // Flip x axis
+        Position = pos;
+
+        Scale = Scale.SwapYZ();
+        if (Rotation != 0 && Rotation != 180) Scale = Scale.SwapXZ();
+
+        Rotation = Rotation * -1; // Invert rotation
+        Rotation = Rotation.Mod(360); // keep rotation between 0-359
+    }
+
+    // Convert from Unity Transform Values to BH and return brickdata (does not overwrite brick) - use this when exporting bricks
+    public BrickData ConvertTransformToBH () {
+        return new BrickData(); // todo
+    }
 
     // call this when scale is changed
     public void UpdateShape () {
@@ -52,7 +71,7 @@ public class Brick
     // also call this when scale is changed?
     public void ClampSize () {
         if (MapBuilder.instance.ShapeConstraints.TryGetValue(Shape, out ShapeSizeConstraint ssc)) {
-            Scale.Clamp(ssc.min, ssc.max);
+            Scale = Scale.Clamp(ssc.min, ssc.max);
         }
     }
 

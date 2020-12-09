@@ -50,7 +50,18 @@ public class MapParser : MonoBehaviour
                 // this line is either defining a new brick or something else that isn't a brick property
                 if (line.StartsWith(">TEAM")) {
                     // this line is clearly defining a team
-                    // TODO: teams
+                    Team t = new Team();
+                    t.Name = line.Substring(6);
+
+                    if (lines.Length > i+1) {
+                        string nextLine = lines[i+1].Trim();
+                        if (nextLine.StartsWith("+COLOR")) {
+                            t.TeamColor = Helper.StringToColor(nextLine.Substring(7));
+                        }
+                    }
+
+                    map.Teams.Add(t);
+                    i++; // increment i since we handled 2 lines
                 } else if (line.StartsWith(">SLOT")) {
                     // this line is defining an item, but those are history so ignore them
                     continue;
@@ -90,6 +101,7 @@ public class MapParser : MonoBehaviour
                     float[] brickInfo = Helper.StringToFloatArray(line);
                     brick.Position = new Vector3(brickInfo[0], brickInfo[1], brickInfo[2]); // first 3 numbers are position
                     brick.Scale = new Vector3(brickInfo[3], brickInfo[4], brickInfo[5]); // next 3 numbers are scale
+                    brick.ConvertTransformToUnity();
                     brick.BrickColor = new Color(brickInfo[6], brickInfo[7], brickInfo[8]); // next 3 numbers are color
                     brick.Transparency = brickInfo[9]; // last number is transparency
                     brick.ID = currentID;
@@ -117,8 +129,8 @@ public class MapParser : MonoBehaviour
                     }
                 } else if (line.StartsWith("+ROT")) {
                     // this line is defining the brick rotation
-                    brick.Rotation = int.Parse(line.Substring(5), CultureInfo.InvariantCulture).Mod(360);
-                    if (brick.Rotation == 90 || brick.Rotation == 270) brick.ScuffedScale = true;
+                    brick.Rotation = (int.Parse(line.Substring(5), CultureInfo.InvariantCulture) * -1).Mod(360);
+                    if (brick.Rotation != 0 && brick.Rotation != 180) brick.Scale = brick.Scale.SwapXZ(); // assuming this is post transform conversion
                 } else if (line.StartsWith("+SHAPE")) {
                     // this line is defining the brick shape
                     brick.Shape = BB.GetShape(line.Substring(7));
@@ -132,6 +144,10 @@ public class MapParser : MonoBehaviour
                     // this line is defining whether or not the brick is clickable
                     // i dont even know if this property is used anymore but eh
                     brick.Clickable = true;
+                    if (line.Length > 11) {
+                        string dist = lines[i].Substring(11);
+                        brick.ClickDistance = float.Parse(dist, CultureInfo.InvariantCulture);
+                    }
                 }
             }
         }
@@ -170,7 +186,7 @@ public class MapParser : MonoBehaviour
                 b.Position = new Vector3(fd[0], fd[1], fd[2]);
                 b.Scale = new Vector3(fd[3], fd[4], fd[5]);
                 b.Rotation = int.Parse(data[6], CultureInfo.InvariantCulture);
-                if (b.Rotation != 0 && b.Rotation != 180) b.ScuffedScale = true;
+                //b.ConvertTransformToUnity();
                 ColorUtility.TryParseHtmlString("#" + data[7], out Color brickColor);
                 b.BrickColor = brickColor;
                 b.Transparency = brickColor.a;
@@ -207,7 +223,11 @@ public class MapParser : MonoBehaviour
                     }
                 }
             } else if (lines[i][0] == '@') { // Team
-                //TODO
+                Team t = new Team();
+                ColorUtility.TryParseHtmlString("#" + lines[i].Substring(1, 6), out Color tc);
+                t.TeamColor = tc;
+                t.Name = lines[i].Substring(8);
+                map.Teams.Add(t);
             } else if (lines[i][0] == '%') { // BB Info
                 if (lines[i][1] == 'C') { // camera transform
                     //TODO
@@ -222,6 +242,10 @@ public class MapParser : MonoBehaviour
                     b.Model = lines[i].Substring(6);
                 } else if (lines[i].StartsWith("CLICKABLE")) {
                     b.Clickable = true;
+                    if (lines[i].Length > 10) {
+                        string dist = lines[i].Substring(10);
+                        b.ClickDistance = float.Parse(dist, CultureInfo.InvariantCulture);
+                    }
                 }
             }
         }
@@ -277,6 +301,8 @@ public class MapParser : MonoBehaviour
                     brick.Position = new Vector3(properties[0] - (int)(properties[3] / 2), properties[1] - (int)(properties[4] / 2), properties[2]);
                     brick.Scale = new Vector3(properties[3], properties[4], properties[5]);
 
+                    brick.ConvertTransformToUnity();
+
                     int decColor = (int)properties[6];
                     brick.BrickColor = Helper.FromDecimal(decColor);
                     brick.BrickColor.a = properties[7]; //alpha
@@ -326,6 +352,7 @@ public class MapParser : MonoBehaviour
                 float[] brickInfo = Helper.StringToFloatArray(line);
                 brick.Position = new Vector3(brickInfo[0], brickInfo[1], brickInfo[2]);
                 brick.Scale = new Vector3(brickInfo[3], brickInfo[4], brickInfo[5]);
+                brick.ConvertTransformToUnity();
                 brick.BrickColor = new Color(brickInfo[6], brickInfo[7], brickInfo[8]);
                 brick.Transparency = brickInfo[9];
 
@@ -341,7 +368,7 @@ public class MapParser : MonoBehaviour
                         brick.Name = line.Substring(6);
                     }
                 } else if (line.StartsWith("+ROT")) {
-                    brick.Rotation = int.Parse(line.Substring(5), CultureInfo.InvariantCulture).Mod(360);
+                    brick.Rotation = (int.Parse(line.Substring(5), CultureInfo.InvariantCulture) * -1).Mod(360);
                 } else if (line.StartsWith("+SHAPE")) {
                     brick.Shape = (int)BB.GetShape(line.Substring(7));
                 } else if (line.StartsWith("+NOCOLLISION")) {

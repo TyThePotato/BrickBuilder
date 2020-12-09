@@ -11,6 +11,7 @@ public class InspectorElement : MonoBehaviour
     public Toggle toggle; // set if applicable
     public TMP_Dropdown dropdown; // set if applicable
     public Image image; // set if applicable
+    public TMP_Text extraLabel; // set if applicable
     public InspectorElementType Type;
 
     // inputfield
@@ -30,6 +31,7 @@ public class InspectorElement : MonoBehaviour
 
     // inputfield
     public int GetInt () {
+        if (string.IsNullOrWhiteSpace(InputFields[0].text)) return 0;
         return int.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
     }
 
@@ -66,6 +68,7 @@ public class InspectorElement : MonoBehaviour
 
     // inputfield
     public float GetFloat() {
+        if (string.IsNullOrWhiteSpace(InputFields[0].text)) return 0f;
         return float.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
     }
 
@@ -89,6 +92,10 @@ public class InspectorElement : MonoBehaviour
         return dropdown.value;
     }
 
+    public void SetExtraLabel (string input) {
+        extraLabel.SetText(input);
+    }
+
     public enum InspectorElementType {
         String,
         Int,
@@ -96,6 +103,7 @@ public class InspectorElement : MonoBehaviour
         Color,
         Float,
         Bool,
-        Dropdown
+        Dropdown,
+        BoolAndFloat
     }
 }
