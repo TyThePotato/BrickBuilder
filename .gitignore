@@ -77,5 +77,5 @@ crashlytics-build.properties
 /[Aa]ssets/[Pp]lugins/QFSW/Build\ Automator.meta
 
 # ide folders
-/.vscode/
-/.idea/
+.vscode/
+.idea/
