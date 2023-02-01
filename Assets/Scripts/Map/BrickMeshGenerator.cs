@@ -16,8 +16,12 @@ namespace BrickBuilder.World
         public Mesh Arch; // Archway interior
         public Mesh BarBase; // Bottom segment of bars
         public Mesh Cone;
+        public Mesh CornerBack;
+        public Mesh CornerBackInverted;
         public Mesh CornerSlope;
         public Mesh CornerSlopeInverted;
+        public Mesh CornerSide;
+        public Mesh CornerSideInverted;
         public Mesh Cube; // Full 6-Sided Cube
         public Mesh CubeT; // Cube without top face - e.g bottom of slope
         public Mesh CubeB; // Cube without bottom face - e.g top of arch
@@ -56,8 +60,8 @@ namespace BrickBuilder.World
                 BrickShape.arch => ArchMesh(source),
                 BrickShape.bars => BarsMesh(source),
                 BrickShape.cone => ConeMesh(source),
-                BrickShape.corner => CubeMesh(source), // TODO
-                BrickShape.corner_inv => CubeMesh(source), // TODO
+                BrickShape.corner => CornerMesh(source),
+                BrickShape.corner_inv => InvertedCornerMesh(source),
                 BrickShape.cube => CubeMesh(source),
                 BrickShape.cylinder => CylinderMesh(source),
                 BrickShape.dome => DomeMesh(source),
@@ -178,11 +182,83 @@ namespace BrickBuilder.World
         }
 
         private static Mesh CornerMesh(Brick source) {
-            return null;
+            Mesh cornerBase = Instantiate(instance.CubeT);
+            Mesh cornerSide = Instantiate(instance.CornerSide);
+            Mesh cornerBack = Instantiate(instance.CornerBack);
+            Mesh cornerCorner = Instantiate(instance.Cube);
+            Mesh cornerSlope = Instantiate(instance.CornerSlope);
+            
+            TransformMesh(cornerBase,
+                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(source.Scale.x, 0.3f, source.Scale.z),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerSide,
+                new Vector3(-0.5f, -source.Scale.y / 2f + 0.3f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerBack,
+                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f + 0.3f, 0.5f),
+                new Vector3(1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerCorner,
+                new Vector3(source.Scale.x / 2f - 0.5f, 0.15f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(1f, source.Scale.y - 0.3f, 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerSlope,
+                new Vector3(-0.5f, -source.Scale.y / 2f + 0.3f, 0.5f),
+                new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
+                source.Rotation
+            );
+
+            return CombineMeshes(new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope });
         }
         
         private static Mesh InvertedCornerMesh(Brick source) {
-            return null;
+            Mesh cornerBase = Instantiate(instance.Cube);
+            Mesh cornerSide = Instantiate(instance.CornerSideInverted);
+            Mesh cornerBack = Instantiate(instance.CornerBackInverted);
+            Mesh cornerCorner = Instantiate(instance.CubeT);
+            Mesh cornerSlope = Instantiate(instance.CornerSlopeInverted);
+            
+            TransformMesh(cornerBase,
+                new Vector3(0f, source.Scale.y / 2f - 0.15f, 0f),
+                new Vector3(source.Scale.x, 0.3f, source.Scale.z),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerSide,
+                new Vector3(-0.5f, -source.Scale.y / 2f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerBack,
+                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f, 0.5f),
+                new Vector3(1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerCorner,
+                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(1f, source.Scale.y - 0.3f, 1f),
+                source.Rotation
+            );
+            
+            TransformMesh(cornerSlope,
+                new Vector3(-0.5f, -source.Scale.y / 2f, 0.5f),
+                new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
+                source.Rotation
+            );
+
+            return CombineMeshes(new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope });
         }
         
         private static Mesh DomeMesh(Brick source) {
@@ -262,18 +338,18 @@ namespace BrickBuilder.World
         }
         
         private static Mesh RoundWedgeMesh(Brick source) {
-            Mesh roundWedgeSide = Instantiate(instance.CubeR);
-            Mesh roundWedgeFront = Instantiate(instance.CubeBk);
+            Mesh roundWedgeSide = Instantiate(instance.CubeL);
+            Mesh roundWedgeFront = Instantiate(instance.CubeF);
             Mesh roundWedgeMain = Instantiate(instance.RoundedWedge);
 
             TransformMesh(roundWedgeSide,
-                new Vector3(0f, 0f, source.Scale.z / 2f - 0.5f),
+                new Vector3(0f, -source.Scale.y / 2f, source.Scale.z / 2f - 0.5f),
                 new Vector3(source.Scale.x, source.Scale.y, 1f),
                 source.Rotation
             );
             
             TransformMesh(roundWedgeFront,
-                new Vector3(-source.Scale.x / 2f + 0.5f, 0f, 0f),
+                new Vector3(-source.Scale.x / 2f + 0.5f, -source.Scale.y / 2f, 0f),
                 new Vector3(1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );

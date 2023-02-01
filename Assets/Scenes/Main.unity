@@ -3250,8 +3250,18 @@ MonoBehaviour:
   BarBase: {fileID: -2432090755550338912, guid: 6fbe02d1d88893f45a2c0c85b1586462,
     type: 3}
   Cone: {fileID: 3613567641014311022, guid: 09c0695f9e5df504fb0cedc0311257e5, type: 3}
-  CornerSlope: {fileID: 0}
-  CornerSlopeInverted: {fileID: 0}
+  CornerBack: {fileID: -5495902117074765545, guid: 77620333cb2204f488b4ac6f09feea56,
+    type: 3}
+  CornerBackInverted: {fileID: -5495902117074765545, guid: b4ff6ac29dfed4b47a0b70ccdbf89ed0,
+    type: 3}
+  CornerSlope: {fileID: -5495902117074765545, guid: f2cde4a0a9a1aad4fa5de0e9067a3b7e,
+    type: 3}
+  CornerSlopeInverted: {fileID: -5495902117074765545, guid: d38cd91f53de343409891931164894de,
+    type: 3}
+  CornerSide: {fileID: -5495902117074765545, guid: 8bafb18cc935e654f98b888c4a4132b0,
+    type: 3}
+  CornerSideInverted: {fileID: -5495902117074765545, guid: f4b6866d4ae70a3448c9e8f22b53e360,
+    type: 3}
   Cube: {fileID: 4629929001153789590, guid: 12231d7a756b1104d915f468584a33d4, type: 3}
   CubeT: {fileID: -2432090755550338912, guid: 5eb2503a36d1b054f941d414c8f1df07, type: 3}
   CubeB: {fileID: -2432090755550338912, guid: 2745f709181b3b846bb082199bcba38d, type: 3}
