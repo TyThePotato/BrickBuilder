@@ -3,8 +3,7 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags:
-  - DontRecolor
+  tags: []
   layers:
   - Default
   - TransparentFX
@@ -12,11 +11,11 @@ TagManager:
   - 
   - Water
   - UI
-  - 
-  - 
-  - Postprocessing
   - Brick
-  - Camera Rotation Object
+  - 
+  - 
+  - 
+  - 
   - 
   - 
   - 

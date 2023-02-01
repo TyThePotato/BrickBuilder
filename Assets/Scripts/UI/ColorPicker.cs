@@ -1,229 +1,441 @@
-﻿using System;
+﻿using BrickBuilder.Utilities;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using Utils;
 
-public class ColorPicker : MonoBehaviour
+namespace BrickBuilder.UI
 {
-    public Canvas canvas;
-    public RectTransform ColorWheel;
-    public Image ColorWheelImage;
-    public Outline ColorWheelOutline;
-    public RectTransform ColorWheelSelector;
-    public int ColorWheelSelectorRange;
-    public RectTransform VSlider;
-    public Image VSliderImage;
-    public RectTransform VSliderSelector;
-    public int VSliderSelectorRange;
-    public TMP_InputField[] ColorFields;
-    //public int InputMethod = 0; // 0:RGB, 1:HSV, 2:Hexadecimal
-    public Image[] SavedColors;
+    public class ColorPicker : MonoBehaviour
+    {
+        public static ColorPicker instance;
 
-    public Color CurrentColor;
+        public static Color CurrentColor;
+        public static Color[] SavedColors;
 
-    public static ColorChangedEvent colorChanged = new ColorChangedEvent();
+        public static ColorPickerMode CurrentMode;
 
-    public bool DraggingWheelSelector = false;
-    public bool DraggingVSliderSelector = false;
+        // Images
+        [Space(5)]
+        [Header("Images")]
+        public Image ColorWheelBackground;
+        public Image BrightnessSliderBackground;
+        public Image[] SavedColorImages;
+        
+        // HSV Controls
+        [Space(5)]
+        [Header("HSV Controls")]
+        public RectTransform ColorDot; // Controls H and S
+        public Slider BrightnessSlider; // Controls V
 
-    private void Start() {
-        SaveColors(SettingsManager.Settings.SavedColors);
-    }
+        public TMP_InputField HueField;
+        public TMP_InputField SaturationField;
+        public TMP_InputField ValueField;
+        
+        // RGBA Controls
+        [Space(5)]
+        [Header("RGBA Controls")]
+        public TMP_InputField RedField;
+        public TMP_InputField GreenField;
+        public TMP_InputField BlueField;
+        public TMP_InputField AlphaField;
+        public Slider AlphaSlider;
+        
+        // Hex Controls
+        [Space(5)]
+        [Header("Hex Controls")]
+        public TMP_InputField HexField;
 
-    private void Update() {
-        float scaleFactor = canvas.scaleFactor;
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        if (DraggingWheelSelector) {
-            Vector2 startPos = ColorWheel.position;
-            Vector2 targetPos = mousePosition;
-            float dist = Vector2.Distance(startPos, targetPos);
-
-            float range = ColorWheelSelectorRange * scaleFactor;
-            if (dist > range) {
-                Vector2 fromOriginToObject = targetPos - startPos;
-                fromOriginToObject *= range / dist;
-                targetPos = startPos + fromOriginToObject;
+        private static Action<Color, ColorPickerMode> _colorChangedCallback;
+        
+        private void Awake()
+        {
+            if (instance == null)
+            {
+                instance = this;
+            }
+            else
+            {
+                Destroy(this);
             }
 
-            ColorWheelSelector.position = targetPos;
+            CurrentColor = new Color(1, 1, 1, 1);
+            SavedColors = new Color[16];
         }
 
-        if (DraggingVSliderSelector) {
-            float range = VSliderSelectorRange * scaleFactor;
-            VSliderSelector.position = new Vector2(VSlider.position.x, Mathf.Clamp(mousePosition.y, VSlider.position.y - range, VSlider.position.y + range));
+        private void Start()
+        {
+            UpdateColorWheel();
+            UpdateAlpha();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            HideColorPicker();
         }
 
-        if (DraggingWheelSelector || DraggingVSliderSelector) {
-            CalculateColor();
+        public static void ShowColorPicker(Color startColor, ColorPickerMode mode, Action<Color, ColorPickerMode> colorChangedCallback)
+        {
+            ShowColorPicker(colorChangedCallback);
+            
+            // set color
+            CurrentColor = startColor;
+            
+            // set mode
+            CurrentMode = mode;
+            
+            // update fields
+            instance.UpdateColorWheel();
+            instance.UpdateAlpha();
+            instance.UpdateRGB();
+            instance.UpdateHSV();
+            instance.UpdateHex();
         }
-    }
+        
+        public static void ShowColorPicker(Action<Color, ColorPickerMode> colorChangedCallback)
+        {
+            // set up callback for color change
+            _colorChangedCallback = colorChangedCallback;
+            
+            // display color picker
+            instance.gameObject.SetActive(true);
+        }
 
-    // calculate color based on selector positions
-    public void CalculateColor () {
-        float h = getColorAngle().Round(10)/360;
-        float s = Vector2.Distance(Vector2.zero, ColorWheelSelector.anchoredPosition) / ColorWheelSelectorRange;
-        s = s.Round(100);
-        float v = (VSliderSelector.anchoredPosition.y + VSliderSelectorRange) / (VSliderSelectorRange * 2);
-        v = v.Round(100);
+        public static void HideColorPicker()
+        {
+            // remove callback
+            _colorChangedCallback = null;
+            
+            // reset mode
+            CurrentMode = ColorPickerMode.None;
+            
+            // hide picker
+            instance.gameObject.SetActive(false);
+        }
+        
+        // stupid unity button onclick cant be bound to static functions from inspector
+        public void HideColorPickerUI()
+        {
+            HideColorPicker();
+        }
 
-        ColorWheelImage.color = new Color(v,v,v);
-        ColorWheelOutline.effectColor = Color.HSVToRGB(0, 0, v / 2);
-        VSliderImage.color = Color.HSVToRGB(h, s, 1);
-        CurrentColor = Color.HSVToRGB(h, s, v);
+        public static void LoadSavedColors(Color[] savedColors)
+        {
+            // Firstly set saved colors array
+            if (savedColors.Length == 16)
+            {
+                SavedColors = savedColors;
+            }
+            else
+            {
+                Debug.LogWarning("WARNING: Saved Color Array Length Wrong! (" + savedColors.Length.ToString() +")");
+            }
 
-        // set inputfields
-        //rgb
-        ColorFields[0].SetTextWithoutNotify(((int)(CurrentColor.r * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[1].SetTextWithoutNotify(((int)(CurrentColor.g * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[2].SetTextWithoutNotify(((int)(CurrentColor.b * 255)).ToString(CultureInfo.InvariantCulture));
-        //hsv
-        ColorFields[3].SetTextWithoutNotify(((int)(h * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[4].SetTextWithoutNotify(((int)(s * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[5].SetTextWithoutNotify(((int)(v * 255)).ToString(CultureInfo.InvariantCulture));
-        //hex
-        ColorFields[6].SetTextWithoutNotify(ColorUtility.ToHtmlStringRGB(CurrentColor));
-
-        // invoke event
-        colorChanged.Invoke(CurrentColor);
-    }
-
-    // calculate selector positions based on color
-    public void CalculateSelectorPositions (bool invokeColorChangedEvent = true) {
-        float h, s, v;
-        Color.RGBToHSV(CurrentColor, out h, out s, out v);
-
-        // set h and s
-        float angle = h * 360;
-        float rad = angle * (Mathf.PI / 180);
-        Vector2 pos = new Vector2(Mathf.Cos(rad), Mathf.Sin(rad));
-        ColorWheelSelector.anchoredPosition = pos * (ColorWheelSelectorRange * s);
-        ColorWheelImage.color = new Color(v, v, v);
-        ColorWheelOutline.effectColor = Color.HSVToRGB(0, 0, v / 2);
-
-        // set v
-        VSliderSelector.anchoredPosition = new Vector2(0,v * (VSliderSelectorRange * 2) - VSliderSelectorRange);
-        VSliderImage.color = Color.HSVToRGB(h, s, 1);
-
-        // set inputfields
-        //rgb
-        ColorFields[0].SetTextWithoutNotify(((int)(CurrentColor.r * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[1].SetTextWithoutNotify(((int)(CurrentColor.g * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[2].SetTextWithoutNotify(((int)(CurrentColor.b * 255)).ToString(CultureInfo.InvariantCulture));
-        //hsv
-        ColorFields[3].SetTextWithoutNotify(((int)(h * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[4].SetTextWithoutNotify(((int)(s * 255)).ToString(CultureInfo.InvariantCulture));
-        ColorFields[5].SetTextWithoutNotify(((int)(v * 255)).ToString(CultureInfo.InvariantCulture));
-        //hex
-        ColorFields[6].SetTextWithoutNotify(ColorUtility.ToHtmlStringRGB(CurrentColor));
-
-        // invoke event
-        if (invokeColorChangedEvent)
-            colorChanged.Invoke(CurrentColor);
-    }
-
-    // set color to input field values
-    public void UpdateColorFromInputfield (int InputMethod) {
-        if (InputMethod == 0) {
-            // parse values
-            int r, g, b;
-            try { r = int.Parse(ColorFields[0].text, CultureInfo.InvariantCulture); } catch (FormatException) { r = 0; ColorFields[0].SetTextWithoutNotify("0"); }
-            try { g = int.Parse(ColorFields[1].text, CultureInfo.InvariantCulture); } catch (FormatException) { g = 0; ColorFields[1].SetTextWithoutNotify("0"); }
-            try { b = int.Parse(ColorFields[2].text, CultureInfo.InvariantCulture); } catch (FormatException) { b = 0; ColorFields[2].SetTextWithoutNotify("0"); }
-
-            // clamp values
-            r = Mathf.Clamp(r, 0, 255);
-            g = Mathf.Clamp(g, 0, 255);
-            b = Mathf.Clamp(b, 0, 255);
-
-            // set values
-            CurrentColor.r = r / 255f;
-            CurrentColor.g = g / 255f;
-            CurrentColor.b = b / 255f;
-        } else if (InputMethod == 1) {
-            // parse values
-            int h, s, v;
-            try { h = int.Parse(ColorFields[3].text, CultureInfo.InvariantCulture); } catch (FormatException) { h = 0; ColorFields[3].SetTextWithoutNotify("0"); }
-            try { s = int.Parse(ColorFields[4].text, CultureInfo.InvariantCulture); } catch (FormatException) { s = 0; ColorFields[4].SetTextWithoutNotify("0"); }
-            try { v = int.Parse(ColorFields[5].text, CultureInfo.InvariantCulture); } catch (FormatException) { v = 0; ColorFields[5].SetTextWithoutNotify("0"); }
-
-            // clamp values
-            h = Mathf.Clamp(h, 0, 255);
-            s = Mathf.Clamp(s, 0, 255);
-            v = Mathf.Clamp(v, 0, 255);
-
-            // set values
-            CurrentColor = Color.HSVToRGB(h/255f, s/255f, v/255f);
-        } else {
-            // parse and set
-            if(ColorUtility.TryParseHtmlString("#" + ColorFields[6].text, out Color hexColor)) {
-                hexColor.a = 1;
-                CurrentColor = hexColor;
-            } else {
-                CurrentColor = Color.white;
+            // Next update saved colors preview
+            for (int i = 0; i < SavedColors.Length; i++)
+            {
+                instance.SavedColorImages[i].color = SavedColors[i];
             }
         }
 
-        // update selector positions
-        CalculateSelectorPositions();
-    }
+        // Calculates the current wheel color
+        public void CalculateWheelColor()
+        {
+            float colorWheelSize = ColorWheelBackground.rectTransform.sizeDelta.x;
+            Vector2 dotPosition = ColorDot.anchoredPosition / (colorWheelSize / 2f);
 
-    public void SetColor (Color color, bool invokeColorChangedEvent) {
-        CurrentColor = color;
-        CalculateSelectorPositions(invokeColorChangedEvent);
-    }
+            // Hue = Angle created from (0,0), (1,0), and the dot's position
+            float hue = Vector2.SignedAngle(Vector2.right, dotPosition).Modulo(360) / 360f;
 
-    public void SaveCurrentColor () {
-        // shift all colors
-        for (int i = SavedColors.Length-1; i >= 0; i--) {
-            if (i == 0) continue; // skip first color
-            SavedColors[i].color = SavedColors[i-1].color;
+            // Saturation = distance from dot to center of circle
+            float saturation = Mathf.Clamp01(Vector2.Distance(dotPosition, Vector2.zero));
+
+            // Value = value of the slider. ez :]
+            float value = BrightnessSlider.value;
+            
+            // Set CurrentColor using calculated values
+            float currentAlpha = CurrentColor.a;
+            CurrentColor = Color.HSVToRGB(hue, saturation, value);
+            CurrentColor.a = currentAlpha;
+            
+            // Recolor color stuff
+            ColorWheelBackground.color = new Color(value, value, value);
+            BrightnessSliderBackground.color = new Color(CurrentColor.r, CurrentColor.g, CurrentColor.b, 1f); // no alpha
         }
-        SavedColors[0].color = CurrentColor;
-        SaveSettings();
-    }
 
-    public void SaveColors (Color[] colors) {
-        for (int i = 0; i < colors.Length; i++) {
-            if (i >= 8) break;
-            SavedColors[i].color = colors[i];
+        // Called when color wheel "dot" is dragged
+        public void ColorWheelDotDrag(BaseEventData data)
+        {
+            PointerEventData ped = (PointerEventData) data;
+
+            // move dot
+            float colorWheelSize = ColorWheelBackground.rectTransform.sizeDelta.x;
+            Vector2 relativeMousePosition = ped.position - ((Vector2)ColorWheelBackground.rectTransform.position +
+                                                            new Vector2(colorWheelSize / 2f, -colorWheelSize / 2f));
+            ColorDot.anchoredPosition = relativeMousePosition;
+            
+            // clamp magnitude of anchored position
+            ColorDot.anchoredPosition = Vector2.ClampMagnitude(ColorDot.anchoredPosition, colorWheelSize / 2f);
+            
+            // calculate new wheel color
+            CalculateWheelColor();
+            
+            // update color values
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
         }
-    }
 
-    public void SelectSavedColor (Image image) {
-        SetColor(image.color, true);
-    }
+        // Updates the color wheel & brightness slider to reflect current color values
+        public void UpdateColorWheel()
+        {
+            // get hsv values for easy calculations
+            Color.RGBToHSV(CurrentColor, out float h, out float s, out float v);
+            
+            // calculate color dot H position using fancy pants trig
+            float angle = h * Mathf.PI * 2; // angle in radians
+            Vector2 dotPos = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            
+            // calculate color dot S position by literally just multiplying dotPos by s
+            dotPos *= s;
 
-    public Color[] GetSavedColors () {
-        Color[] colors = new Color[8];
-        for (int i = 0; i < SavedColors.Length; i++) {
-            colors[i] = SavedColors[i].color;
+            // no need for any wild V calculations
+            BrightnessSlider.SetValueWithoutNotify(v);
+            
+            // apply color dot position
+            float colorWheelSize = ColorWheelBackground.rectTransform.sizeDelta.x;
+            ColorDot.anchoredPosition = dotPos * (colorWheelSize / 2f);
+            
+            // Recolor color stuff
+            ColorWheelBackground.color = new Color(v, v, v);
+            BrightnessSliderBackground.color = new Color(CurrentColor.r, CurrentColor.g, CurrentColor.b, 1f); // no alpha
         }
-        return colors;
-    }
 
-    public void PressingWheelSelector (bool value) {
-        DraggingWheelSelector = value;
-    }
+        // Called when the brightness slider is changed
+        public void BrightnessSliderChange()
+        {
+            CalculateWheelColor();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
+        }
 
-    public void PressingVSliderSelector (bool value) {
-        DraggingVSliderSelector = value;
-    }
+        // Called when the alpha slider is changed
+        public void AlphaSliderChange()
+        {
+            CurrentColor.a = AlphaSlider.value;
+            UpdateAlpha();
+            UpdateHex();
+            
+            ColorChanged();
+        }
 
-    public void SaveSettings (bool saveToFile = true) {
-        SettingsManager.Settings.SavedColors = GetSavedColors();
-        if (saveToFile) SettingsManager.SaveSettings();
-    }
+        // Called when the alpha inputfield is updated
+        public void AlphaInput()
+        {
+            float alphaInput = ParseFieldText(AlphaField.text);
+            if (alphaInput != -1.0f)
+            {
+                // :]
+                CurrentColor.a = alphaInput;
+            }
 
-    private float getColorAngle () {
-        float rad = Mathf.Atan2(ColorWheelSelector.anchoredPosition.y, ColorWheelSelector.anchoredPosition.x);
-        return (rad * (180f / Mathf.PI) + 360) % 360; // convert radians to degrees with a range of 0-360
+            UpdateAlpha();
+            
+            ColorChanged();
+        }
+
+        // Updates the alpha slider & inputfield to reflect current color values
+        public void UpdateAlpha()
+        {
+            int alpha255 = (int)(CurrentColor.a * 255);
+            AlphaField.SetTextWithoutNotify(alpha255.ToString());
+            AlphaSlider.SetValueWithoutNotify(CurrentColor.a);;
+        }
+
+        // Called when the rgb inputfield is updated
+        public void RGBInput()
+        {
+            float rInput = ParseFieldText(RedField.text);
+            if (rInput != -1.0f)
+            {
+                CurrentColor.r = rInput;
+
+            }
+
+            float gInput = ParseFieldText(GreenField.text);
+            if (gInput != -1.0f)
+            {
+                CurrentColor.g = gInput;
+
+            }
+
+            float bInput = ParseFieldText(BlueField.text);
+            if (bInput != -1.0f)
+            {
+                CurrentColor.b = bInput;
+            }
+
+            UpdateColorWheel();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
+        }
+
+        // updates rgb inputfield to reflect current color values
+        public void UpdateRGB()
+        {
+            int r255 = (int) (CurrentColor.r * 255);
+            int g255 = (int) (CurrentColor.g * 255);
+            int b255 = (int) (CurrentColor.b * 255);
+            
+            RedField.SetTextWithoutNotify(r255.ToString());
+            GreenField.SetTextWithoutNotify(g255.ToString());
+            BlueField.SetTextWithoutNotify(b255.ToString());
+        }
+
+        // Called when the hsv inputfield is updated
+        public void HSVInput()
+        {
+            float hInput = ParseFieldText(HueField.text);
+            if (hInput == -1.0f)
+            {
+                // invalid
+                hInput = 0f;
+
+            }
+
+            float sInput = ParseFieldText(SaturationField.text);
+            if (sInput == -1.0f)
+            {
+                // invalid
+                sInput = 1f;
+
+            }
+
+            float vInput = ParseFieldText(ValueField.text);
+            if (vInput == -1.0f)
+            {
+                // Invalid
+                vInput = 1f;
+            }
+
+            float currentAlpha = CurrentColor.a;
+            CurrentColor = Color.HSVToRGB(hInput, sInput, vInput);
+            CurrentColor.a = currentAlpha;
+
+            UpdateColorWheel();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
+        }
+
+        // updates hsv inputfield to reflect current color values
+        public void UpdateHSV()
+        {
+            Color.RGBToHSV(CurrentColor, out float h, out float s, out float v);
+
+            int h255 = (int) (h * 255);
+            int s255 = (int) (s * 255);
+            int v255 = (int) (v * 255);
+            
+            HueField.SetTextWithoutNotify(h255.ToString());
+            SaturationField.SetTextWithoutNotify(s255.ToString());
+            ValueField.SetTextWithoutNotify(v255.ToString());
+        }
+
+        // Called when the hex inputfield is updated
+        public void HexInput()
+        {
+            ColorUtility.TryParseHtmlString(HexField.text, out CurrentColor);
+
+            UpdateColorWheel();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
+        }
+
+        // updates hex inputfield to reflect current color values
+        public void UpdateHex()
+        {
+            string color = ColorUtility.ToHtmlStringRGBA(CurrentColor);
+            HexField.SetTextWithoutNotify(color);
+        }
+
+        // Saves CurrentColor to first color slot
+        public void SaveColor()
+        {
+            // shift all colors back
+            for (int i = SavedColors.Length - 1; i > 0; i--)
+            {
+                SavedColors[i] = SavedColors[i - 1];
+            }
+            
+            // set first color to newly saved color
+            SavedColors[0] = CurrentColor;
+            
+            // update color previews
+            for (int i = 0; i < SavedColors.Length; i++)
+            {
+                SavedColorImages[i].color = SavedColors[i];
+            }
+        }
+        
+        // Sets CurrentColor to selected color slot
+        public void SelectSavedColor(int index)
+        {
+            CurrentColor = SavedColors[index];
+            
+            UpdateColorWheel();
+            UpdateAlpha();
+            UpdateRGB();
+            UpdateHSV();
+            UpdateHex();
+            
+            ColorChanged();
+        }
+
+        // Attempts to parse string to float, returns -1 if unsuccessful
+        private float ParseFieldText(string text)
+        {
+            if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out int fieldInt))
+            {
+                fieldInt = Mathf.Clamp(fieldInt, 0, 255);
+                return fieldInt / 255f;
+            }
+            else
+            {
+                return -1.0f;
+            }
+        }
+
+        private void ColorChanged()
+        {
+            _colorChangedCallback?.Invoke(CurrentColor, CurrentMode);
+        }
+        
+        public enum ColorPickerMode
+        {
+            None,
+            Ambient,
+            Baseplate,
+            Sky,
+            Brick,
+            Paintbrush
+        }
     }
 }
-
-public class ColorChangedEvent : UnityEvent<Color> { }

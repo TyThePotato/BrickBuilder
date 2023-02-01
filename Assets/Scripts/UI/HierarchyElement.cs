@@ -1,50 +1,30 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class HierarchyElement : MonoBehaviour
+namespace BrickBuilder.UI
 {
-    public Image Icon;
-    public TMP_Text Label;
+    public class HierarchyElement : MonoBehaviour
+    {
+        public Guid ID; // ID of associated element
+        public int Position; // Position in hierarchy
+        public bool Selected;
+        
+        public TMP_Text Label;
+        public Image Background;
+        public Image Icon;
+        public Button SelectButton;
 
-    public Map.ElementType Type;
-    public new GameObject gameObject;
-    public object AssociatedObject;
+        public void SetIcon(Sprite sprite, Color color)
+        {
+            Icon.sprite = sprite;
 
-    public Button SelectionButton;
-    public Image SelectionImage;
-
-    private Dictionary<int, HierarchyElement> ChildElements = new Dictionary<int, HierarchyElement>();
-
-    public void Set(Map.ElementType type, Sprite icon, string label, GameObject GO, object associatedObject) {
-        Type = type;
-        Icon.sprite = icon;
-        Label.text = label;
-        gameObject = GO;
-        AssociatedObject = associatedObject;
-    }
-
-    public void SetIcon (Sprite icon) {
-        Icon.sprite = icon;
-    }
-
-    public void Add (HierarchyElement element) {
-        if (!ChildElements.ContainsValue(element)) {
-            if (element.AssociatedObject is Brick) {
-                int id = (element.AssociatedObject as Brick).ID;
-                ChildElements.Add(id, element);
-            } else if (element.AssociatedObject is BrickGroup) {
-                int id = (element.AssociatedObject as BrickGroup).ID;
-                ChildElements.Add(id, element);
-            }
-        }
-    }
-
-    public void Remove (int id) {
-        if (ChildElements.ContainsKey(id)) {
-            ChildElements.Remove(id);
+            color.a = 1f; // disallow transparent icons
+            Icon.color = color;
+            
         }
     }
 }

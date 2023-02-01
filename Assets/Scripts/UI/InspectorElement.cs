@@ -1,109 +1,219 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using BrickBuilder.Exceptions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class InspectorElement : MonoBehaviour
+namespace BrickBuilder.UI
 {
-    public TMP_InputField[] InputFields; // set if applicable
-    public Toggle toggle; // set if applicable
-    public TMP_Dropdown dropdown; // set if applicable
-    public Image image; // set if applicable
-    public TMP_Text extraLabel; // set if applicable
-    public InspectorElementType Type;
+    public class InspectorElement : MonoBehaviour
+    {
+        public Value PropertyValue;
 
-    // inputfield
-    public void SetString (string input) {
-        InputFields[0].SetTextWithoutNotify(input);
-    }
+        // Strings, Numbers
+        public TMP_InputField[] InputFields;
+        
+        // Boolean
+        public Toggle Toggle;
+        
+        // Dropdown
+        public TMP_Dropdown Dropdown;
+        
+        // Color
+        public Image ColorPreview;
+        public Button ColorButton;
+        public ColorPicker.ColorPickerMode ColorType;
+        
+        // ====
+        // Init
+        // ====
 
-    // inputfield
-    public string GetString () {
-        return InputFields[0].text;
-    }
-
-    // inputfield
-    public void SetInt (int input) {
-        InputFields[0].SetTextWithoutNotify(input.ToString(CultureInfo.InvariantCulture));
-    }
-
-    // inputfield
-    public int GetInt () {
-        if (string.IsNullOrWhiteSpace(InputFields[0].text)) return 0;
-        return int.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
-    }
-
-    // inputfield[]
-    public void SetVector3(Vector3 input) {
-        InputFields[0].SetTextWithoutNotify(input.x.ToString(CultureInfo.InvariantCulture));
-        InputFields[1].SetTextWithoutNotify(input.y.ToString(CultureInfo.InvariantCulture));
-        InputFields[2].SetTextWithoutNotify(input.z.ToString(CultureInfo.InvariantCulture));
-    }
-
-    // inputfield[]
-    public Vector3 GetVector3() {
-        return new Vector3(float.Parse(InputFields[0].text, CultureInfo.InvariantCulture), float.Parse(InputFields[1].text, CultureInfo.InvariantCulture), float.Parse(InputFields[2].text, CultureInfo.InvariantCulture));
-    }
-
-    public void SetColor (Color input, bool ignoreAlpha = false) {
-        if (ignoreAlpha) {
-            Color alphant = input;
-            alphant.a = 1f;
-            image.color = alphant;
-        } else {
-            image.color = input;
+        public void SetColorButtonCallback(Action<Color, ColorPicker.ColorPickerMode> callback)
+        {
+            ColorButton.onClick.AddListener(delegate
+            {
+                ColorPicker.ShowColorPicker(ColorPreview.color, ColorType, callback);
+            });
         }
-    }
 
-    public Color GetColor () {
-        return image.color;
-    }
+        // ===
+        // Set
+        // ===
 
-    // inputfield
-    public void SetFloat(float input) {
-        InputFields[0].SetTextWithoutNotify(input.ToString(CultureInfo.InvariantCulture));
-    }
+        // String
+        public void SetValue(string value)
+        {
+            if (PropertyValue != Value.String) return;
+            
+            InputFields[0].SetTextWithoutNotify(value);
+        }
 
-    // inputfield
-    public float GetFloat() {
-        if (string.IsNullOrWhiteSpace(InputFields[0].text)) return 0f;
-        return float.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
-    }
+        // Int & Dropdown
+        public void SetValue(int value)
+        {
+            if (PropertyValue == Value.Integer)
+            {
+                InputFields[0].SetTextWithoutNotify(value.ToString(CultureInfo.InvariantCulture));
+            } else if (PropertyValue == Value.Dropdown)
+            {
+                Dropdown.SetValueWithoutNotify(value);
+            }
+        }
+        
+        // Float
+        public void SetValue(float value)
+        {
+            if (PropertyValue != Value.Float) return;
+            
+            InputFields[0].SetTextWithoutNotify(value.ToString(CultureInfo.InvariantCulture));
+        }
+        
+        // Vector3
+        public void SetValue(Vector3 value)
+        {
+            if (PropertyValue != Value.Vector3) return;
+            
+            InputFields[0].SetTextWithoutNotify(value.x.ToString(CultureInfo.InvariantCulture));
+            InputFields[1].SetTextWithoutNotify(value.y.ToString(CultureInfo.InvariantCulture));
+            InputFields[2].SetTextWithoutNotify(value.z.ToString(CultureInfo.InvariantCulture));
+        }
 
-    // toggle
-    public void SetBool (bool input) {
-        toggle.SetIsOnWithoutNotify(input);
-    }
+        // Vector3Int
+        public void SetValue(Vector3Int value)
+        {
+            if (PropertyValue != Value.Vector3Int) return;
+            
+            InputFields[0].SetTextWithoutNotify(value.x.ToString(CultureInfo.InvariantCulture));
+            InputFields[1].SetTextWithoutNotify(value.y.ToString(CultureInfo.InvariantCulture));
+            InputFields[2].SetTextWithoutNotify(value.z.ToString(CultureInfo.InvariantCulture));
+        }
 
-    // toggle
-    public bool GetBool () {
-        return toggle.isOn;
-    }
+        // Boolean
+        public void SetValue(bool value)
+        {
+            if (PropertyValue != Value.Boolean) return;
 
-    // dropdown
-    public void SetDropdown (int input) {
-        dropdown.SetValueWithoutNotify(input);
-    }
+            Toggle.isOn = value;
+        }
+        
+        // Color
+        public void SetValue(Color value)
+        {
+            if (PropertyValue != Value.Color) return;
 
-    // dropdown
-    public int GetDropdown () {
-        return dropdown.value;
-    }
+            ColorPreview.color = value;
+            Debug.Log(ColorPreview.color);
+        }
 
-    public void SetExtraLabel (string input) {
-        extraLabel.SetText(input);
-    }
+        // ===
+        // Get
+        // ===
 
-    public enum InspectorElementType {
-        String,
-        Int,
-        Vector3,
-        Color,
-        Float,
-        Bool,
-        Dropdown,
-        BoolAndFloat
+        public string GetString()
+        {
+            if (PropertyValue != Value.String)
+            {
+                throw new InspectorValueMismatchException();
+            }
+            
+            return InputFields[0].text;
+        }
+        
+        public int GetInteger()
+        {
+            if (PropertyValue != Value.Integer)
+            {
+                throw new InspectorValueMismatchException();
+            }
+            
+            return int.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
+        }
+        
+        public float GetFloat()
+        {
+            if (PropertyValue != Value.Float)
+            {
+                throw new InspectorValueMismatchException();
+            }
+            
+            return float.Parse(InputFields[0].text, CultureInfo.InvariantCulture);
+        }
+        
+        public Vector3 GetVector3()
+        {
+            if (PropertyValue != Value.Vector3)
+            {
+                throw new InspectorValueMismatchException();
+            }
+
+            return new Vector3(
+                float.Parse(InputFields[0].text, CultureInfo.InvariantCulture),
+                float.Parse(InputFields[1].text, CultureInfo.InvariantCulture),
+                float.Parse(InputFields[2].text, CultureInfo.InvariantCulture)
+            );
+        }
+        
+        public Vector3Int GetVector3Int()
+        {
+            if (PropertyValue != Value.Vector3Int)
+            {
+                throw new InspectorValueMismatchException();
+            }
+
+            return new Vector3Int(
+                int.Parse(InputFields[0].text, CultureInfo.InvariantCulture),
+                int.Parse(InputFields[1].text, CultureInfo.InvariantCulture),
+                int.Parse(InputFields[2].text, CultureInfo.InvariantCulture)
+            );
+        }
+        
+        public bool GetBoolean()
+        {
+            if (PropertyValue != Value.Boolean)
+            {
+                throw new InspectorValueMismatchException();
+            }
+
+            return Toggle.isOn;
+        }
+
+        public int GetDropdown()
+        {
+            if (PropertyValue != Value.Dropdown)
+            {
+                throw new InspectorValueMismatchException();
+            }
+
+            return Dropdown.value;
+        }
+
+        public Color GetColor()
+        {
+            if (PropertyValue != Value.Color)
+            {
+                throw new InspectorValueMismatchException();
+            }
+
+            return ColorPreview.color;
+        }
+        
+        // =====
+        // Other
+        // =====
+        
+        public enum Value
+        {
+            String,
+            Integer,
+            Float,
+            Vector3,
+            Vector3Int,
+            Boolean,
+            Dropdown,
+            Color
+        }
     }
 }

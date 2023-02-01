@@ -1,95 +1,170 @@
 ﻿using System;
+using BrickBuilder.Utilities;
 using UnityEngine;
-using Utils;
 
-[Serializable]
-public class Brick
+namespace BrickBuilder.World
 {
-    // bh properties
-    public string Name; // Brick Name
-    public Vector3 Position; // XYZ Position
-    public Vector3 Scale; // XYZ Scale
-    public int Rotation; // Rotation is along Y (up/down) axis
-    public Color BrickColor; // Color of the brick.
-    public float Transparency = 1f; // Transparency of the brick. This might be able to be replaced with BrickColor.a
-    public bool CollisionEnabled = true; // Can you collide with the brick?
-    public bool Clickable = false; // Is the brick clickable?
-    public float ClickDistance; // Distance brick can be clicked from
-    public ShapeType Shape = ShapeType.cube; // Brick shape
-    public string Model; // ID of the asset used for the brick
+    /// <summary>
+    /// Contains the properties of an individual brick, such as Position, Scale, Rotation, and Color.
+    /// </summary>
+    public class Brick
+    {
+        public Guid ID; // Is this overkill?
+        public string Name;
 
-    // bb properties
-    public bool ScuffedScale = false;
-    public bool Selected = false;
-    public int ID; // ID of the brick, makes many things much easier
-    public BrickGroup Parent; // parent
-    public GameObject gameObject; // the GameObject built from this brick
-    public BrickGO brickGO; // BrickGO of the above gameobject
-    public BrickShape brickShape; // BrickShape of the above gameobject, manages brick scaling and stuff
+        public Vector3 Position;
+        public Vector3 Scale;
+        public UnityEngine.Vector3Int Rotation;
 
-    // Convert from BH Transform Values to Unity - Use this when reading bricks from file
-    public void ConvertTransformToUnity () {
-        Vector3 pos = Position.SwapYZ() + Scale.SwapYZ() / 2; // Brick-Hill positions are based around some corner of the brick, while Unity positions are based around the pivot point (usually center) of the transform
-        pos.x *= -1; // Flip x axis
-        Position = pos;
+        public Color Color;
+        public BrickShape Shape;
+        public int Model;
 
-        Scale = Scale.SwapYZ();
-        if (Rotation != 0 && Rotation != 180) Scale = Scale.SwapXZ();
+        public bool Collision;
+        
+        public bool IsTransparent => Color.a != 1.0f;
 
-        Rotation = Rotation * -1; // Invert rotation
-        Rotation = Rotation.Mod(360); // keep rotation between 0-359
-    }
+        /// <summary>
+        /// Creates a brick with random ID and default values
+        /// </summary>
+        /// <param name="id"></param>
+        public Brick()
+        {
+            ID = Guid.NewGuid();
+            Name = "New Brick";
+            
+            Position = Vector3.zero;
+            Scale = Vector3.one;
+            Rotation = UnityEngine.Vector3Int.zero;
 
-    // Convert from Unity Transform Values to BH and return brickdata (does not overwrite brick) - use this when exporting bricks
-    public BrickData ConvertTransformToBH () {
-        return new BrickData(); // todo
-    }
+            Color = Color.white;
 
-    // call this when scale is changed
-    public void UpdateShape () {
-        brickShape.UpdateShape();
-    }
+            Collision = true;
+        }
+        
+        /// <summary>
+        /// Creates a brick with set ID and default values
+        /// </summary>
+        /// <param name="id"></param>
+        public Brick(Guid id)
+        {
+            ID = id;
+            Name = "New Brick";
+            
+            Position = Vector3.zero;
+            Scale = Vector3.one;
+            Rotation = UnityEngine.Vector3Int.zero;
 
-    // call when model is changed
-    public void UpdateModel () {
-        if (string.IsNullOrWhiteSpace(Model)) {
-            brickShape.RemoveAssetGameobject();
-        } else {
-            CustomModelHelper.SetCustomModel(brickShape, Model);
+            Color = Color.white;
+
+            Collision = true;
+        }
+        
+        /// <summary>
+        /// Creates a brick with random ID and predefined values
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="position"></param>
+        /// <param name="scale"></param>
+        /// <param name="rotation"></param>
+        /// <param name="color"></param>
+        /// <param name="collision"></param>
+        public Brick(string name, Vector3 position, Vector3 scale, UnityEngine.Vector3Int rotation, Color color, bool collision)
+        {
+            ID = Guid.NewGuid();
+            Name = name;
+            
+            Position = position;
+            Scale = scale;
+            Rotation = rotation;
+
+            Color = color;
+
+            Collision = collision;
+        }
+
+        /// <summary>
+        /// Creates a brick with set ID and predefined values
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="position"></param>
+        /// <param name="scale"></param>
+        /// <param name="rotation"></param>
+        /// <param name="color"></param>
+        /// <param name="collision"></param>
+        public Brick(Guid id, string name, Vector3 position, Vector3 scale, UnityEngine.Vector3Int rotation, Color color, bool collision)
+        {
+            ID = id;
+            Name = name;
+            
+            Position = position;
+            Scale = scale;
+            Rotation = rotation;
+
+            Color = color;
+
+            Collision = collision;
+        }
+
+        /// <summary>
+        /// Converts transform info from BRKv2 to BB/Unity
+        /// This includes swapping Y and Z, flipping X, and adjusting values based on pivot point
+        /// It also includes using the correct scale depending on rotation (ugh)
+        /// </summary>
+        public void ConvertFromBRKv2()
+        {
+            // Firstly, flip/swap all the transform values
+            Position = Position.SwapYZ(); // Swap YZ
+            Scale = Scale.SwapYZ(); // ^
+
+            Rotation.y = (-Rotation.y).Modulo(360); // Invert rotation
+            
+            // Next, adjust position based on scale
+            Position += Scale / 2f;
+            
+            // Flip X axis NOW
+            Position.x = -Position.x;
+            
+            // Finally, adjust scale based on rotation (sheesh)
+            if (Rotation.y != 0 && Rotation.y != 180)
+            {
+                Scale = Scale.SwapXZ();
+            }
+        }
+
+        /// <summary>
+        /// Returns a replica of the brick
+        /// </summary>
+        /// <returns></returns>
+        public Brick Clone()
+        {
+            Brick returnBrick = new Brick(ID, Name, Position, Scale, Rotation, Color, Collision);
+            returnBrick.Shape = Shape;
+            return returnBrick;
         }
     }
 
-    // call this when rotation is changed
-    public void CheckIfScuffed () {
-        if (!((Rotation == 0 || Rotation == 180) ^ ScuffedScale)) { // massive brain code that i did not figure out myself
-            Scale = Scale.SwapXY();
-            Position = gameObject.transform.position.ToBB(Scale);
-            ScuffedScale = !ScuffedScale;
-        }
-    }
-
-    // also call this when scale is changed?
-    public void ClampSize () {
-        if (MapBuilder.instance.ShapeConstraints.TryGetValue(Shape, out ShapeSizeConstraint ssc)) {
-            Scale = Scale.Clamp(ssc.min, ssc.max);
-        }
-    }
-
-    // plate, corner, corner_inv, and round are not included because:
-    // plate is literally just a cube with the height set to 0.3, so why does it need to be separate?
-    // corner, corner_inv, and round may be added at some point, but for now no, as they are broken in bh and i don't believe they are used often
-    public enum ShapeType {
+    public enum BrickShape
+    {
         cube,
         slope,
         wedge,
         spawnpoint,
         arch,
+        corner, // new
+        corner_inv, // new
         dome,
         bars,
         flag,
         pole,
+        round, // new
         cylinder,
         round_slope,
-        vent
+        vent,
+        cone, // new
+        sphere, // new
+        invalid // new
     }
 }
