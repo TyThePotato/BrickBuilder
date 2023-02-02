@@ -68,13 +68,8 @@ namespace BrickBuilder.World
             go.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
             
             // rendering
-            bool transparent = brick.IsTransparent;
             MeshRenderer mr = go.AddComponent<MeshRenderer>();
-            mr.materials = new[] {
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Smooth, transparent),
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Stud, transparent),
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Inlet, transparent)
-            };
+            mr.materials = GetBrickMaterials(brick);
             
             BrickGOs.Add(brick.ID, go);
             return go;
@@ -91,14 +86,9 @@ namespace BrickBuilder.World
 
         public static void SetBrickGlow(Brick brick, bool glow) {
             if (!BrickGOs.ContainsKey(brick.ID)) return; // TODO: Exception?
-
-            bool transparent = brick.IsTransparent;
+            
             MeshRenderer mr = BrickGOs[brick.ID].GetComponent<MeshRenderer>();
-            mr.materials = new[] {
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Smooth, transparent, glow),
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Stud, transparent, glow),
-                MaterialCache.GetMaterial(MaterialCache.FaceType.Inlet, transparent, glow)
-            };
+            mr.materials = GetBrickMaterials(brick, glow);
         }
 
         public static void RemoveBrick(Guid id) {
@@ -136,6 +126,61 @@ namespace BrickBuilder.World
             
             // Sky
             EditorCamera.Camera.backgroundColor = map.SkyColor;
+        }
+
+        public static Material[] GetBrickMaterials(Brick brick, bool glow = false) {
+            int materialCount = 3;
+            
+            // determine face types
+            MaterialCache.FaceType sidesFace = MaterialCache.FaceType.Smooth;
+            MaterialCache.FaceType topFace = MaterialCache.FaceType.Stud;
+            MaterialCache.FaceType bottomFace = MaterialCache.FaceType.Inlet;
+            MaterialCache.FaceType extraFace = MaterialCache.FaceType.Grain;
+
+            switch (brick.Shape) {
+                case BrickShape.slope:
+                    materialCount = 4;
+                    break;
+                case BrickShape.dome:
+                    materialCount = 1;
+                    break;
+                case BrickShape.flag:
+                    materialCount = 1;
+                    break;
+                case BrickShape.pole:
+                    materialCount = 1;
+                    break;
+                case BrickShape.cylinder:
+                    materialCount = 1;
+                    break;
+                case BrickShape.cone:
+                    materialCount = 1;
+                    break;
+                case BrickShape.spawnpoint:
+                    topFace = MaterialCache.FaceType.Spawnpoint;
+                    break;
+                case BrickShape.sphere:
+                    materialCount = 1;
+                    break;
+                case BrickShape.invalid:
+                    materialCount = 4;
+                    sidesFace = MaterialCache.FaceType.Grid;
+                    topFace = MaterialCache.FaceType.Grid;
+                    bottomFace = MaterialCache.FaceType.Grid;
+                    extraFace = MaterialCache.FaceType.Grid;
+                    break;
+            }
+            
+            Material[] materials = new Material[materialCount];
+            bool transparent = brick.IsTransparent;
+            
+            // populate array
+            materials[0] = MaterialCache.GetMaterial(sidesFace, transparent, glow);
+            if (materialCount > 1) materials[1] = MaterialCache.GetMaterial(topFace, transparent, glow);
+            if (materialCount > 2) materials[2] = MaterialCache.GetMaterial(bottomFace, transparent, glow);
+            if (materialCount > 3) materials[3] = MaterialCache.GetMaterial(extraFace, transparent, glow);
+            
+            return materials;
         }
     }
 }

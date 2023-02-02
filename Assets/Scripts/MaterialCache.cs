@@ -13,6 +13,7 @@ namespace BrickBuilder.Rendering
         public Texture InletTexture;
         public Texture SpawnpointTexture;
         public Texture GridTexture;
+        public Texture GrainTexture;
 
         public Shader OpaqueShader;
         public Shader TransparentShader;
@@ -37,7 +38,6 @@ namespace BrickBuilder.Rendering
         /// Checks material cache for matching material. If it doesn't exist, it makes it.
         /// </summary>
         /// <param name="face"></param>
-        /// <param name="tile"></param>
         /// <param name="transparent"></param>
         /// <param name="glow"></param>
         /// <returns></returns>
@@ -54,10 +54,11 @@ namespace BrickBuilder.Rendering
 
             // Set Texture
             Texture materialTexture = face switch {
-                (FaceType.Stud) => instance.StudTexture,
-                (FaceType.Inlet) => instance.InletTexture,
-                (FaceType.Spawnpoint) => instance.SpawnpointTexture,
-                (FaceType.Grid) => instance.SpawnpointTexture,
+                FaceType.Stud => instance.StudTexture,
+                FaceType.Inlet => instance.InletTexture,
+                FaceType.Spawnpoint => instance.SpawnpointTexture,
+                FaceType.Grid => instance.GridTexture,
+                FaceType.Grain => instance.GrainTexture,
                 _ => null
             };
 
@@ -70,6 +71,8 @@ namespace BrickBuilder.Rendering
             mat.SetFloat("_Glow", glow ? 1f : 0f);
             
             // Add to cache then return
+            mat.name = (materialTexture ? materialTexture.name : "Smooth") + "_" + transparent.ToString() + "_" + glow.ToString();
+            
             if (!glow)
                 MaterialDictionary.Add((face, transparent), mat);
             return mat;
@@ -81,7 +84,8 @@ namespace BrickBuilder.Rendering
             Stud,
             Inlet,
             Spawnpoint,
-            Grid
+            Grid,
+            Grain
         }
     }
 }

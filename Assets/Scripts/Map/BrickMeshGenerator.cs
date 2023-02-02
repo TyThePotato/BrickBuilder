@@ -25,10 +25,6 @@ namespace BrickBuilder.World
         public Mesh Cube; // Full 6-Sided Cube
         public Mesh CubeT; // Cube without top face - e.g bottom of slope
         public Mesh CubeB; // Cube without bottom face - e.g top of arch
-        public Mesh CubeR; // Cube without right face - e.g left side of arch
-        public Mesh CubeL; // Cube without left face - e.g right side of arch
-        public Mesh CubeF; // Cube without front face - e.g back side of slope
-        public Mesh CubeBk; // Cube without back face - e.g side face of wedge
         public Mesh Cylinder; // Cylinder with all faces
         public Mesh CylinderT; // Cylinder without top face - e.g base of cylinder shape
         public Mesh CylinderTB; // Cylinder without top or bottom face - e.g pole, NOT tuberculosis.
@@ -89,69 +85,67 @@ namespace BrickBuilder.World
             Mesh mesh = Instantiate(instance.Cube);
 
             TransformMesh(mesh, Vector3.zero, source.Scale, source.Rotation);
-            
-            List<Vector2> uvs = new List<Vector2>();
-            mesh.GetUVs(0, uvs);
-
-            for (int i = 0; i < uvs.Count; i++)
-            {
-                uvs[i] = new Vector2(uvs[i].x * source.Scale.x, uvs[i].y * source.Scale.z);
-            }
-            
-            mesh.SetUVs(0, uvs);
+            ScaleUVs(mesh, source.Scale.x, source.Scale.z);
 
             return mesh;
         }
 
         private static Mesh SlopeMesh(Brick source) {
             Mesh slopeBase = Instantiate(instance.CubeT);
-            Mesh slopeBack = Instantiate(instance.CubeF);
+            Mesh slopeBack = Instantiate(instance.CubeB);
             Mesh slope = Instantiate(instance.Slope);
             
             TransformMesh(slopeBase, 
-                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(0f, -source.Scale.y / 2f + 0.15f, 0f),
                 new Vector3(source.Scale.x, 0.3f, source.Scale.z),
                 source.Rotation
-                );
+            );
+            ScaleUVs(slopeBase, source.Scale.x, source.Scale.z);
             
             TransformMesh(slopeBack, 
-                new Vector3(-source.Scale.x / 2f + 0.5f, -source.Scale.y / 2f, 0f),
+                new Vector3(-source.Scale.x / 2f + 0.5f, 0f, 0f),
                 new Vector3(1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(slopeBack, 1f, source.Scale.z);
             
             TransformMesh(slope, 
-                new Vector3(source.Scale.x / 2f, -source.Scale.y / 2f + 0.3f, 0f),
+                new Vector3(0.5f, 0.15f, 0f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, source.Scale.z),
                 source.Rotation
             );
 
-            return CombineMeshes(new[] { slopeBase, slopeBack, slope });
+            return CombineMeshes(
+                new[] { slopeBase, slopeBack, slope },
+                new[] { 0, 2, 0, 1, 0, 3}
+            );
         }
 
         private static Mesh WedgeMesh(Brick source) {
-            Mesh madgeSide = Instantiate(instance.CubeBk); // accidentally typed madge and thought it was funny
+            Mesh madgeSide = Instantiate(instance.Cube); // accidentally typed madge and thought it was funny
             Mesh madge = Instantiate(instance.Wedge); 
 
             TransformMesh(madgeSide,
-                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f, 0f),
+                new Vector3(source.Scale.x / 2f - 0.5f, 0f, 0f),
                 new Vector3(1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(madgeSide, 1f, source.Scale.z);
             
             TransformMesh(madge,
-                new Vector3(source.Scale.x / 2f - 1f, 0f, 0f),
+                new Vector3(-0.5f, 0f, 0f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(madge, source.Scale.x - 1, source.Scale.z);
 
             return CombineMeshes(new[] {madgeSide, madge});
         }
         
         private static Mesh ArchMesh(Brick source) {
             Mesh archMain = Instantiate(instance.Arch);
-            Mesh archLeft = Instantiate(instance.CubeR);
-            Mesh archRight = Instantiate(instance.CubeL);
+            Mesh archLeft = Instantiate(instance.CubeT);
+            Mesh archRight = Instantiate(instance.CubeT);
             Mesh archTop = Instantiate(instance.CubeB);
 
             TransformMesh(archMain,
@@ -338,18 +332,18 @@ namespace BrickBuilder.World
         }
         
         private static Mesh RoundWedgeMesh(Brick source) {
-            Mesh roundWedgeSide = Instantiate(instance.CubeL);
-            Mesh roundWedgeFront = Instantiate(instance.CubeF);
+            Mesh roundWedgeSide = Instantiate(instance.Cube);
+            Mesh roundWedgeFront = Instantiate(instance.Cube);
             Mesh roundWedgeMain = Instantiate(instance.RoundedWedge);
 
             TransformMesh(roundWedgeSide,
-                new Vector3(0f, -source.Scale.y / 2f, source.Scale.z / 2f - 0.5f),
+                new Vector3(0f, 0f, source.Scale.z / 2f - 0.5f),
                 new Vector3(source.Scale.x, source.Scale.y, 1f),
                 source.Rotation
             );
             
             TransformMesh(roundWedgeFront,
-                new Vector3(-source.Scale.x / 2f + 0.5f, -source.Scale.y / 2f, 0f),
+                new Vector3(-source.Scale.x / 2f + 0.5f, 0f, 0f),
                 new Vector3(1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
@@ -385,6 +379,7 @@ namespace BrickBuilder.World
         private static Mesh RoundSlopeMesh(Brick source) {
             Mesh roundSlope = Instantiate(instance.RoundedSlope);
             TransformMesh(roundSlope, Vector3.zero, source.Scale, source.Rotation);
+            ScaleUVs(roundSlope, source.Scale.x, source.Scale.z);
             return roundSlope;
         }
         
@@ -422,14 +417,15 @@ namespace BrickBuilder.World
         }
 
         // hmm, i wonder what this does
-        private static Mesh CombineMeshes(Mesh[] meshes)
+        private static Mesh CombineMeshes(Mesh[] meshes, int[] remapSubMeshes = null)
         {
             List<Vector3> vertices = new List<Vector3>();
             List<List<int>> triangles = new List<List<int>>();
             List<List<Vector2>> uvs = new List<List<Vector2>>();
             List<Color> colors = new List<Color>();
             List<Vector3> normals = new List<Vector3>();
-            
+
+            int totalSubMeshIndex = 0;
             for (int i = 0; i < meshes.Length; i++)
             {
                 if (meshes[i] == null) continue;
@@ -461,24 +457,39 @@ namespace BrickBuilder.World
                         submeshTriangles[k] += startingVertex;
                     }
 
-                    if (triangles.Count > j)
-                    {
-                        triangles[j].AddRange(submeshTriangles);
-                    }
-                    else
-                    {
-                        triangles.Add(submeshTriangles);
+                    int targetSubMesh = j;
+                    if (remapSubMeshes != null) {
+                        targetSubMesh = remapSubMeshes[totalSubMeshIndex + j];
+                        if (targetSubMesh == -1) targetSubMesh = j;
                     }
                     
-                    if (uvs.Count > j)
+                    if (triangles.Count > targetSubMesh)
                     {
-                        uvs[j].AddRange(submeshUVs);
+                        triangles[targetSubMesh].AddRange(submeshTriangles);
+                    }
+                    else {
+                        // populate list with empty lists so we are not out of range
+                        while (triangles.Count <= targetSubMesh)
+                            triangles.Add(new List<int>());
+                        
+                        triangles[targetSubMesh] = submeshTriangles;
+                    }
+                    
+                    if (uvs.Count > targetSubMesh)
+                    {
+                        uvs[targetSubMesh].AddRange(submeshUVs);
                     }
                     else
                     {
-                        uvs.Add(submeshUVs);
+                        // populate list with empty lists so we are not out of range
+                        while (uvs.Count <= targetSubMesh)
+                            uvs.Add(new List<Vector2>());
+                        
+                        uvs[targetSubMesh] = submeshUVs;
                     }
                 }
+
+                totalSubMeshIndex += meshes[i].subMeshCount;
             }
 
             Mesh combinedMesh = new Mesh();
@@ -513,6 +524,17 @@ namespace BrickBuilder.World
                 verts[i] = RotatePointAroundPivot(verts[i], Vector3.zero, rotation);
             }
             mesh.SetVertices(verts);
+        }
+
+        private static void ScaleUVs(Mesh mesh, float x, float y) {
+            Vector2[] uvs = mesh.uv;
+
+            for (int i = 0; i < uvs.Length; i++) {
+                uvs[i].x *= x;
+                uvs[i].y *= y;
+            }
+            
+            mesh.SetUVs(0, uvs);
         }
         
         // sets all vertexcolors of a mesh to specified color

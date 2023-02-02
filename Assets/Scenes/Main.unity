@@ -3117,7 +3117,8 @@ MonoBehaviour:
   StudTexture: {fileID: 2800000, guid: d50481d4e527a34d68fb27964ca545f1, type: 3}
   InletTexture: {fileID: 2800000, guid: 39d980ed770d00fe69e40d0136ed9910, type: 3}
   SpawnpointTexture: {fileID: 2800000, guid: 4d2a33e785fadd2d59ee56b6f4dfcf85, type: 3}
-  GridTexture: {fileID: 0}
+  GridTexture: {fileID: 2800000, guid: 3b27673d86f02e44e8b4a9a56d8cbac6, type: 3}
+  GrainTexture: {fileID: 2800000, guid: 24cf5a853980a584cabf1a96b24884bc, type: 3}
   OpaqueShader: {fileID: -6465566751694194690, guid: f2a74e5ee1247cbec971b90927a030c6,
     type: 3}
   TransparentShader: {fileID: -6465566751694194690, guid: 0208fba2e008fcaa2b42f2b18f93bcb5,
@@ -3246,47 +3247,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 262a31a9b86371f158031b0d890469f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Arch: {fileID: -2432090755550338912, guid: bef6f9bd7abd5d5478519ee620ab4c8d, type: 3}
-  BarBase: {fileID: -2432090755550338912, guid: 6fbe02d1d88893f45a2c0c85b1586462,
-    type: 3}
+  Arch: {fileID: 1960654409700015248, guid: c41f6f0bf6f0c0a4f9afc344a8ac1222, type: 3}
+  BarBase: {fileID: 6379125753309808981, guid: ebbe4d2c9d09c474f8ef80bbd79c92e7, type: 3}
   Cone: {fileID: 3613567641014311022, guid: 09c0695f9e5df504fb0cedc0311257e5, type: 3}
-  CornerBack: {fileID: -5495902117074765545, guid: 77620333cb2204f488b4ac6f09feea56,
+  CornerBack: {fileID: 2742826264781124592, guid: 718a3093600aed6479a592caacd04979,
     type: 3}
-  CornerBackInverted: {fileID: -5495902117074765545, guid: b4ff6ac29dfed4b47a0b70ccdbf89ed0,
+  CornerBackInverted: {fileID: -2741843396830077452, guid: 47f205d53b370d14c8d78ba040bcc35b,
     type: 3}
-  CornerSlope: {fileID: -5495902117074765545, guid: f2cde4a0a9a1aad4fa5de0e9067a3b7e,
+  CornerSlope: {fileID: -430599516948112143, guid: f68576e7c8258de41ac676cb79468866,
     type: 3}
-  CornerSlopeInverted: {fileID: -5495902117074765545, guid: d38cd91f53de343409891931164894de,
+  CornerSlopeInverted: {fileID: 1942498862591995971, guid: 7cedf9834e4ff554bb8fa9c26cf04724,
     type: 3}
-  CornerSide: {fileID: -5495902117074765545, guid: 8bafb18cc935e654f98b888c4a4132b0,
+  CornerSide: {fileID: 1613162895772864464, guid: 29aa5d533b9262f4fb8f9fbbb5c0571c,
     type: 3}
-  CornerSideInverted: {fileID: -5495902117074765545, guid: f4b6866d4ae70a3448c9e8f22b53e360,
+  CornerSideInverted: {fileID: -7789615714262139014, guid: 1c41b2ca60544f0459a4e405dab53744,
     type: 3}
-  Cube: {fileID: 4629929001153789590, guid: 12231d7a756b1104d915f468584a33d4, type: 3}
-  CubeT: {fileID: -2432090755550338912, guid: 5eb2503a36d1b054f941d414c8f1df07, type: 3}
-  CubeB: {fileID: -2432090755550338912, guid: 2745f709181b3b846bb082199bcba38d, type: 3}
-  CubeR: {fileID: -2432090755550338912, guid: ca2959763e2f5194cb7d5e47c1b4ea20, type: 3}
-  CubeL: {fileID: -2432090755550338912, guid: 2c26ad15702761d48a233996c7eb3a45, type: 3}
-  CubeF: {fileID: -2432090755550338912, guid: 17c08f8f6b963c846bb698b02b19e32f, type: 3}
-  CubeBk: {fileID: -2432090755550338912, guid: 021be4932a027de47aa45d41ad1967c4, type: 3}
-  Cylinder: {fileID: -4741520218607662460, guid: af6faee64816ca04185a33f21491acae,
+  Cube: {fileID: 783640961681332573, guid: 68e800ed2ebf4aa4d9755b2b1d73c9dc, type: 3}
+  CubeT: {fileID: 5070975454735473035, guid: 970050a7d6ed0ae41b937327e6dd2121, type: 3}
+  CubeB: {fileID: 556707106730763835, guid: 7e20903f13ed2804ca363ede9c3ed197, type: 3}
+  Cylinder: {fileID: -1446135551930948436, guid: 88a9d24ef78e8a049af2522600f1b724,
     type: 3}
-  CylinderT: {fileID: -4741520218607662460, guid: e6de606b992efa841a6f3f6a56a67aa7,
+  CylinderT: {fileID: -8093848697599350570, guid: c30a098aecd3ecd4b8e7ee972828b006,
     type: 3}
-  CylinderTB: {fileID: -4741520218607662460, guid: d7e62366eb3270f1ea554c332d6b802e,
+  CylinderTB: {fileID: -8275262937609704130, guid: 8e733dbbf17ba6744a637c68b04db628,
     type: 3}
-  Dome: {fileID: 4711208715938537054, guid: c8185e30e96381946a68d5f360f2e57b, type: 3}
-  Flag: {fileID: 2534964839176971238, guid: 737f32120d0487343b590f969593fd57, type: 3}
-  PoleTip: {fileID: -2432090755550338912, guid: 4522ea77ea4c9d249aec7177135accf3,
+  Dome: {fileID: -7399136301523328422, guid: c8185e30e96381946a68d5f360f2e57b, type: 3}
+  Flag: {fileID: 6532508685850981849, guid: 737f32120d0487343b590f969593fd57, type: 3}
+  PoleTip: {fileID: 9043053738813206602, guid: 3fda01da419a94e48b88b6907377f01f, type: 3}
+  RoundedSlope: {fileID: -8603475369056664398, guid: a2c3edde329ec294fad7fefc302267d8,
     type: 3}
-  RoundedSlope: {fileID: 6036443330992862904, guid: b1e110de135510949b476c0605a6cde8,
+  RoundedWedge: {fileID: -748824004433809106, guid: 51cd8fe9b4352b240af6886082e22378,
     type: 3}
-  RoundedWedge: {fileID: 2534964839176971238, guid: d0fb799b2fe0f5947889e9be8dd15283,
-    type: 3}
-  Slope: {fileID: -2432090755550338912, guid: b960c50ee8c28f447b42a9646dadcd59, type: 3}
+  Slope: {fileID: 5924159088411371066, guid: 3bb79e0ab202a334289dbb20b7ad889f, type: 3}
   Sphere: {fileID: 4711208715938537054, guid: 519cbb50bdff5ec45a36b070bcb18ece, type: 3}
-  Vent: {fileID: -2432090755550338912, guid: 92198ad9726449641a0fd3adedf21fea, type: 3}
-  Wedge: {fileID: -2432090755550338912, guid: fe65560368037ea4d8a2d3dbe395f2f8, type: 3}
+  Vent: {fileID: 879393299063259478, guid: 284dcc804aaae8f43914ce2566956212, type: 3}
+  Wedge: {fileID: -122999701322966394, guid: 4742476b9a819a9478fba2c42e71b9bd, type: 3}
 --- !u!1 &207392442
 GameObject:
   m_ObjectHideFlags: 0
@@ -14461,6 +14456,10 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Arch
       m_Image: {fileID: 0}
+    - m_Text: Corner
+      m_Image: {fileID: 0}
+    - m_Text: Inverted Corner
+      m_Image: {fileID: 0}
     - m_Text: Dome
       m_Image: {fileID: 0}
     - m_Text: Bars
@@ -14469,11 +14468,19 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Pole
       m_Image: {fileID: 0}
+    - m_Text: Round Wedge
+      m_Image: {fileID: 0}
     - m_Text: Cylinder
       m_Image: {fileID: 0}
     - m_Text: Round Slope
       m_Image: {fileID: 0}
     - m_Text: Vent
+      m_Image: {fileID: 0}
+    - m_Text: Cone
+      m_Image: {fileID: 0}
+    - m_Text: Sphere
+      m_Image: {fileID: 0}
+    - m_Text: Grid
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:

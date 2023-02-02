@@ -167,7 +167,12 @@ namespace BrickBuilder.IO
                                 }
                                 catch (ArgumentException e)
                                 {
-                                    brick.Shape = BrickShape.invalid;
+                                    if (nextLine.Substring(7) == "plate") {
+                                        brick.Shape = BrickShape.cube;
+                                    }
+                                    else {
+                                        brick.Shape = BrickShape.invalid;
+                                    }
                                 }
                             }
                             else if (nextLine.StartsWith("+NOCOLLISION"))
