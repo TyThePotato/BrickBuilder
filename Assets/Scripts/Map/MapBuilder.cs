@@ -132,10 +132,10 @@ namespace BrickBuilder.World
             int materialCount = 3;
             
             // determine face types
-            MaterialCache.FaceType sidesFace = MaterialCache.FaceType.Smooth;
-            MaterialCache.FaceType topFace = MaterialCache.FaceType.Stud;
-            MaterialCache.FaceType bottomFace = MaterialCache.FaceType.Inlet;
-            MaterialCache.FaceType extraFace = MaterialCache.FaceType.Grain;
+            MaterialCache.FaceType slot1 = MaterialCache.FaceType.Smooth;
+            MaterialCache.FaceType slot2 = MaterialCache.FaceType.Stud;
+            MaterialCache.FaceType slot3 = MaterialCache.FaceType.Inlet;
+            MaterialCache.FaceType slot4 = MaterialCache.FaceType.Grain;
 
             switch (brick.Shape) {
                 case BrickShape.slope:
@@ -153,21 +153,28 @@ namespace BrickBuilder.World
                 case BrickShape.cylinder:
                     materialCount = 1;
                     break;
+                case BrickShape.round_slope:
+                    materialCount = 2;
+                    slot2 = MaterialCache.FaceType.Inlet;
+                    break;
+                case BrickShape.vent:
+                    materialCount = 2;
+                    slot2 = MaterialCache.FaceType.Inlet;
+                    break;
                 case BrickShape.cone:
                     materialCount = 1;
                     break;
                 case BrickShape.spawnpoint:
-                    topFace = MaterialCache.FaceType.Spawnpoint;
+                    slot2 = MaterialCache.FaceType.Spawnpoint;
                     break;
                 case BrickShape.sphere:
                     materialCount = 1;
                     break;
                 case BrickShape.invalid:
-                    materialCount = 4;
-                    sidesFace = MaterialCache.FaceType.Grid;
-                    topFace = MaterialCache.FaceType.Grid;
-                    bottomFace = MaterialCache.FaceType.Grid;
-                    extraFace = MaterialCache.FaceType.Grid;
+                    materialCount = 3;
+                    slot1 = MaterialCache.FaceType.Grid;
+                    slot2 = MaterialCache.FaceType.Grid;
+                    slot3 = MaterialCache.FaceType.Grid;
                     break;
             }
             
@@ -175,10 +182,10 @@ namespace BrickBuilder.World
             bool transparent = brick.IsTransparent;
             
             // populate array
-            materials[0] = MaterialCache.GetMaterial(sidesFace, transparent, glow);
-            if (materialCount > 1) materials[1] = MaterialCache.GetMaterial(topFace, transparent, glow);
-            if (materialCount > 2) materials[2] = MaterialCache.GetMaterial(bottomFace, transparent, glow);
-            if (materialCount > 3) materials[3] = MaterialCache.GetMaterial(extraFace, transparent, glow);
+            materials[0] = MaterialCache.GetMaterial(slot1, transparent, glow);
+            if (materialCount > 1) materials[1] = MaterialCache.GetMaterial(slot2, transparent, glow);
+            if (materialCount > 2) materials[2] = MaterialCache.GetMaterial(slot3, transparent, glow);
+            if (materialCount > 3) materials[3] = MaterialCache.GetMaterial(slot4, transparent, glow);
             
             return materials;
         }

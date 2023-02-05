@@ -24,7 +24,7 @@ namespace BrickBuilder.User {
         {
             Camera = GetComponent<Camera>();
             
-            // inputsystem doesnt really have a GetButton equivalent -_-
+            // inputsystem doesnt really have a GetButton equivalent
             InputHelper.boost.started += _ => _movementBoost = true;
             InputHelper.boost.canceled += _ => _movementBoost = false;
             InputHelper.lookButton.started += _ => _lookButtonDown = true;
@@ -68,7 +68,7 @@ namespace BrickBuilder.User {
                 
                 // get current camera rotation and add look delta
                 Vector3 cameraEulers = transform.localEulerAngles;
-                cameraEulers += (Vector3) lookDelta * (LookSpeed * Time.deltaTime);
+                cameraEulers += (Vector3) lookDelta * LookSpeed;
 
                 // clamp camera rotation
                 cameraEulers.x = Utils.ClampAngle(cameraEulers.x, -VerticalLookLimit, VerticalLookLimit);

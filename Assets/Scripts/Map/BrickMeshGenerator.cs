@@ -23,14 +23,18 @@ namespace BrickBuilder.World
         public Mesh CornerSide;
         public Mesh CornerSideInverted;
         public Mesh Cube; // Full 6-Sided Cube
-        public Mesh CubeT; // Cube without top face - e.g bottom of slope
-        public Mesh CubeB; // Cube without bottom face - e.g top of arch
+        public Mesh CubeFbk; // Cube WITH ONLY front and back faces
+        public Mesh CubeLR; // Cube WITH ONLY left and right faces
+        public Mesh CubeT; // Cube without top face
+        public Mesh CubeTB; // Cube WITH ONLY top and bottom faces
+        public Mesh CubeB; // Cube without bottom face
         public Mesh Cylinder; // Cylinder with all faces
-        public Mesh CylinderT; // Cylinder without top face - e.g base of cylinder shape
-        public Mesh CylinderTB; // Cylinder without top or bottom face - e.g pole, NOT tuberculosis.
+        public Mesh CylinderT; // Cylinder without top face
+        public Mesh CylinderTB; // Cylinder without top or bottom face
         public Mesh Dome;
-        public Mesh Flag; 
-        public Mesh PoleTip;
+        public Mesh DomeTop;
+        public Mesh Flag;
+        public Mesh Plane;
         public Mesh RoundedSlope;
         public Mesh RoundedWedge;
         public Mesh Slope;
@@ -62,16 +66,16 @@ namespace BrickBuilder.World
                 BrickShape.cylinder => CylinderMesh(source),
                 BrickShape.dome => DomeMesh(source),
                 BrickShape.flag => FlagMesh(source),
-                BrickShape.invalid => CubeMesh(source), // TODO
+                BrickShape.invalid => GridMesh(source),
                 BrickShape.pole => PoleMesh(source),
                 BrickShape.round => RoundWedgeMesh(source),
                 BrickShape.round_slope => RoundSlopeMesh(source),
                 BrickShape.slope => SlopeMesh(source),
-                BrickShape.spawnpoint => CubeMesh(source), // TODO
+                BrickShape.spawnpoint => SpawnpointMesh(source),
                 BrickShape.sphere => SphereMesh(source),
                 BrickShape.vent => VentMesh(source),
                 BrickShape.wedge => WedgeMesh(source),
-                _ => CubeMesh(source) // TODO: Invalid/Grid mesh
+                _ => GridMesh(source)
             };
 
             ColorMesh(returnMesh, source.Color);
@@ -137,9 +141,27 @@ namespace BrickBuilder.World
                 new Vector3(source.Scale.x - 1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
-            ScaleUVs(madge, source.Scale.x - 1, source.Scale.z);
 
-            return CombineMeshes(new[] {madgeSide, madge});
+            return CombineMeshes(
+                new[] { madgeSide, madge },
+                new[] { 0, 1, 2, 0, 0, 0 }
+            );
+        }
+
+        private static Mesh SpawnpointMesh(Brick source) {
+            Mesh spawnpointBase = Instantiate(instance.CubeT);
+            Mesh spawnpointTop = Instantiate(instance.Plane);
+            
+            TransformMesh(spawnpointBase, Vector3.zero, source.Scale, source.Rotation);
+            ScaleUVs(spawnpointBase, source.Scale.x, source.Scale.z);
+            
+            TransformMesh(spawnpointTop, new Vector3(0f, source.Scale.y / 2f, 0f), source.Scale, source.Rotation);
+            ScaleUVs(spawnpointTop, 1f, 1f);
+            
+            return CombineMeshes(
+                new [] { spawnpointBase, spawnpointTop },
+                new [] { 0, 2, 1 }
+            );
         }
         
         private static Mesh ArchMesh(Brick source) {
@@ -149,53 +171,60 @@ namespace BrickBuilder.World
             Mesh archTop = Instantiate(instance.CubeB);
 
             TransformMesh(archMain,
-                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(0f, -0.15f, 0f),
                 new Vector3(source.Scale.x, source.Scale.y - 0.3f, source.Scale.z - 2f),
                 source.Rotation
             );
             
             TransformMesh(archLeft,
-                new Vector3(0f, -source.Scale.y / 2f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(0f, 0f, -source.Scale.z / 2f + 0.5f),
                 new Vector3(source.Scale.x, source.Scale.y, 1f),
                 source.Rotation
-            );            
+            );       
+            ScaleUVs(archLeft, source.Scale.x, 1f);
             
             TransformMesh(archRight,
-                new Vector3(0f, -source.Scale.y / 2f, source.Scale.z / 2f - 0.5f),
+                new Vector3(0f, 0f, source.Scale.z / 2f - 0.5f),
                 new Vector3(source.Scale.x, source.Scale.y, 1f),
                 source.Rotation
             );
+            ScaleUVs(archRight, source.Scale.x, 1f);
 
             TransformMesh(archTop,
-                new Vector3(0f, source.Scale.y / 2f, 0f),
+                new Vector3(0f, source.Scale.y / 2f - 0.15f, 0f),
                 new Vector3(source.Scale.x, 0.3f, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(archTop, source.Scale.x, source.Scale.z);
             
-            return CombineMeshes(new[] { archMain, archLeft, archRight, archTop });
+            return CombineMeshes(
+                new[] { archMain, archLeft, archRight, archTop },
+                new[] { 0, 0, 2, 0, 2, 0, 1 }
+            );
         }
 
         private static Mesh CornerMesh(Brick source) {
             Mesh cornerBase = Instantiate(instance.CubeT);
             Mesh cornerSide = Instantiate(instance.CornerSide);
             Mesh cornerBack = Instantiate(instance.CornerBack);
-            Mesh cornerCorner = Instantiate(instance.Cube);
+            Mesh cornerCorner = Instantiate(instance.CubeB);
             Mesh cornerSlope = Instantiate(instance.CornerSlope);
             
             TransformMesh(cornerBase,
-                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(0f, -source.Scale.y / 2f + 0.15f, 0f),
                 new Vector3(source.Scale.x, 0.3f, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(cornerBase, source.Scale.x, source.Scale.z);
             
             TransformMesh(cornerSide,
-                new Vector3(-0.5f, -source.Scale.y / 2f + 0.3f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(-0.5f, 0.15f, -source.Scale.z / 2f + 0.5f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, 1f),
                 source.Rotation
             );
             
             TransformMesh(cornerBack,
-                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f + 0.3f, 0.5f),
+                new Vector3(source.Scale.x / 2f - 0.5f, 0.15f, 0.5f),
                 new Vector3(1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
                 source.Rotation
             );
@@ -207,16 +236,19 @@ namespace BrickBuilder.World
             );
             
             TransformMesh(cornerSlope,
-                new Vector3(-0.5f, -source.Scale.y / 2f + 0.3f, 0.5f),
+                new Vector3(-0.5f, 0.15f, 0.5f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
                 source.Rotation
             );
 
-            return CombineMeshes(new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope });
+            return CombineMeshes(
+                new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope },
+                new[] { 0, 2, 0, 0, 0, 1, 0 }
+            );
         }
         
         private static Mesh InvertedCornerMesh(Brick source) {
-            Mesh cornerBase = Instantiate(instance.Cube);
+            Mesh cornerBase = Instantiate(instance.CubeB);
             Mesh cornerSide = Instantiate(instance.CornerSideInverted);
             Mesh cornerBack = Instantiate(instance.CornerBackInverted);
             Mesh cornerCorner = Instantiate(instance.CubeT);
@@ -228,31 +260,36 @@ namespace BrickBuilder.World
                 source.Rotation
             );
             
+            ScaleUVs(cornerBase, source.Scale.x, source.Scale.z);
+            
             TransformMesh(cornerSide,
-                new Vector3(-0.5f, -source.Scale.y / 2f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(-0.5f, -0.15f, -source.Scale.z / 2f + 0.5f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, 1f),
                 source.Rotation
             );
             
             TransformMesh(cornerBack,
-                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f, 0.5f),
+                new Vector3(source.Scale.x / 2f - 0.5f, -0.15f, 0.5f),
                 new Vector3(1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
                 source.Rotation
             );
             
             TransformMesh(cornerCorner,
-                new Vector3(source.Scale.x / 2f - 0.5f, -source.Scale.y / 2f, -source.Scale.z / 2f + 0.5f),
+                new Vector3(source.Scale.x / 2f - 0.5f, -0.15f, -source.Scale.z / 2f + 0.5f),
                 new Vector3(1f, source.Scale.y - 0.3f, 1f),
                 source.Rotation
             );
             
             TransformMesh(cornerSlope,
-                new Vector3(-0.5f, -source.Scale.y / 2f, 0.5f),
+                new Vector3(-0.5f, -0.15f, 0.5f),
                 new Vector3(source.Scale.x - 1f, source.Scale.y - 0.3f, source.Scale.z - 1f),
                 source.Rotation
             );
 
-            return CombineMeshes(new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope });
+            return CombineMeshes(
+                new[] { cornerBase, cornerSide, cornerBack, cornerCorner, cornerSlope },
+                new[] { 0, 1, 0, 0, 0, 2, 0 }
+                );
         }
         
         private static Mesh DomeMesh(Brick source) {
@@ -269,6 +306,7 @@ namespace BrickBuilder.World
             if (source.Rotation.y != 0 && source.Rotation.y != 180) startingX *= -1f;
             
             Mesh[] barsMeshes = new Mesh[depth * 3]; // 3 segments per bar
+            int[] submeshIndexes = new int[depth * 6]; // 6 submesh index remaps per bar
             for (int i = 0; i < depth; i++) {
                 Mesh barBase = Instantiate(instance.BarBase);
                 Mesh barPole = Instantiate(instance.CylinderTB);
@@ -278,14 +316,14 @@ namespace BrickBuilder.World
                 barsMeshes[i * 3 + 2] = barTop;
                 
                 TransformMesh(barBase,
-                    new Vector3(startingX, -source.Scale.y / 2f, startingZ + i),
-                    new Vector3(1f, 1f, 1f),
+                    new Vector3(startingX, -source.Scale.y / 2f + 0.3f, startingZ + i),
+                    new Vector3(1f, 0.6f, 1f),
                     source.Rotation
                 );
                 
                 TransformMesh(barPole,
-                    new Vector3(startingX, -source.Scale.y / 2f, startingZ + i),
-                    new Vector3(0.5f, source.Scale.y, 0.5f),
+                    new Vector3(startingX, 0.15f, startingZ + i),
+                    new Vector3(0.5f, source.Scale.y - 0.9f, 0.5f),
                     source.Rotation
                 );
                 
@@ -294,9 +332,17 @@ namespace BrickBuilder.World
                     new Vector3(1f, 0.3f, 1f),
                     source.Rotation
                 );
+
+                // remap submeshes (to fix material order)
+                submeshIndexes[i * 6 + 0] = 0;
+                submeshIndexes[i * 6 + 1] = 2;
+                submeshIndexes[i * 6 + 2] = 0;
+                submeshIndexes[i * 6 + 3] = 0;
+                submeshIndexes[i * 6 + 4] = 1;
+                submeshIndexes[i * 6 + 5] = 2;
             }
             
-            return CombineMeshes(barsMeshes);
+            return CombineMeshes(barsMeshes, submeshIndexes);
         }
         
         private static Mesh FlagMesh(Brick source) {
@@ -304,27 +350,27 @@ namespace BrickBuilder.World
             TransformMesh(flag, Vector3.zero, source.Scale, source.Rotation);
             return flag;
         }
-        
+
         private static Mesh PoleMesh(Brick source) {
             Mesh poleBase = Instantiate(instance.Cylinder);
             Mesh pole = Instantiate(instance.CylinderTB);
-            Mesh poleTip = Instantiate(instance.PoleTip);
+            Mesh poleTip = Instantiate(instance.DomeTop);
 
             TransformMesh(poleBase,
-                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(0f, -source.Scale.y / 2f + 0.15f, 0f),
                 new Vector3(1f, 0.3f, 1f),
                 source.Rotation
             );
             
             TransformMesh(pole,
-                new Vector3(0f, -source.Scale.y / 2f + 0.3f, 0f),
+                new Vector3(0f, 0f, 0f),
                 new Vector3(0.6f, source.Scale.y - 0.6f, 0.6f),
                 source.Rotation
             );
             
             TransformMesh(poleTip,
-                new Vector3(0f, source.Scale.y / 2f - 0.3f, 0f),
-                new Vector3(1f, 1f, 1f),
+                new Vector3(0f, source.Scale.y / 2f - 0.15f, 0f),
+                new Vector3(0.6f, 0.3f, 0.6f),
                 source.Rotation
             );
             
@@ -341,12 +387,14 @@ namespace BrickBuilder.World
                 new Vector3(source.Scale.x, source.Scale.y, 1f),
                 source.Rotation
             );
+            ScaleUVs(roundWedgeSide, source.Scale.x, 1f);
             
             TransformMesh(roundWedgeFront,
                 new Vector3(-source.Scale.x / 2f + 0.5f, 0f, 0f),
                 new Vector3(1f, source.Scale.y, source.Scale.z),
                 source.Rotation
             );
+            ScaleUVs(roundWedgeFront, 1f, source.Scale.z);
             
             TransformMesh(roundWedgeMain,
                 new Vector3(0.5f, 0f, -0.5f),
@@ -362,13 +410,13 @@ namespace BrickBuilder.World
             Mesh cylMain = Instantiate(instance.Cylinder);
 
             TransformMesh(cylBase,
-                new Vector3(0f, -source.Scale.y / 2f, 0f),
+                new Vector3(0f, -source.Scale.y / 2f + 0.15f, 0f),
                 new Vector3(source.Scale.x - 0.2f, 0.3f, source.Scale.z - 0.2f),
                 source.Rotation
             );
             
             TransformMesh(cylMain,
-                new Vector3(0f, -source.Scale.y / 2f + 0.3f, 0f),
+                new Vector3(0f, 0.15f, 0f),
                 new Vector3(source.Scale.x, source.Scale.y - 0.3f, source.Scale.z),
                 source.Rotation
             );
@@ -399,6 +447,8 @@ namespace BrickBuilder.World
                     new Vector3(1f, 0.3f, depth),
                     source.Rotation
                 );
+                
+                ScaleUVs(vent, width, 1f);
             }
             
             return CombineMeshes(ventMeshes);
@@ -416,12 +466,30 @@ namespace BrickBuilder.World
             return sphere;
         }
 
+        private static Mesh GridMesh(Brick source) {
+            Mesh tb = Instantiate(instance.CubeTB);
+            Mesh lr = Instantiate(instance.CubeLR);
+            Mesh fbk = Instantiate(instance.CubeFbk);
+            
+            TransformMesh(tb, Vector3.zero, source.Scale, source.Rotation);
+            ScaleUVs(tb, source.Scale.x / 2f, source.Scale.z / 2f);
+            TransformMesh(lr, Vector3.zero, source.Scale, source.Rotation);
+            ScaleUVs(lr, source.Scale.x / 2f, source.Scale.y / 2f);
+            TransformMesh(fbk, Vector3.zero, source.Scale, source.Rotation);
+            ScaleUVs(fbk, source.Scale.z / 2f, source.Scale.y / 2f);
+            
+            return CombineMeshes(
+                new [] { tb, lr, fbk },
+                new [] { 1, 1, 0, 0, 2, 2 }
+            );
+        }        
+        
         // hmm, i wonder what this does
         private static Mesh CombineMeshes(Mesh[] meshes, int[] remapSubMeshes = null)
         {
             List<Vector3> vertices = new List<Vector3>();
             List<List<int>> triangles = new List<List<int>>();
-            List<List<Vector2>> uvs = new List<List<Vector2>>();
+            List<Vector2> uvs = new List<Vector2>();
             List<Color> colors = new List<Color>();
             List<Vector3> normals = new List<Vector3>();
 
@@ -447,10 +515,8 @@ namespace BrickBuilder.World
                 for (int j = 0; j < meshes[i].subMeshCount; j++)
                 {
                     List<int> submeshTriangles = new List<int>();
-                    List<Vector2> submeshUVs = new List<Vector2>();
 
                     meshes[i].GetTriangles(submeshTriangles, j);
-                    meshes[i].GetUVs(j, submeshUVs);
 
                     for (int k = 0; k < submeshTriangles.Count; k++)
                     {
@@ -474,20 +540,10 @@ namespace BrickBuilder.World
                         
                         triangles[targetSubMesh] = submeshTriangles;
                     }
-                    
-                    if (uvs.Count > targetSubMesh)
-                    {
-                        uvs[targetSubMesh].AddRange(submeshUVs);
-                    }
-                    else
-                    {
-                        // populate list with empty lists so we are not out of range
-                        while (uvs.Count <= targetSubMesh)
-                            uvs.Add(new List<Vector2>());
-                        
-                        uvs[targetSubMesh] = submeshUVs;
-                    }
                 }
+                
+                // append uvs as-is
+                uvs.AddRange(meshes[i].uv);
 
                 totalSubMeshIndex += meshes[i].subMeshCount;
             }
@@ -498,13 +554,14 @@ namespace BrickBuilder.World
             
             combinedMesh.SetVertices(vertices);
 
+            // Set submesh data
             combinedMesh.subMeshCount = triangles.Count;
             for (int i = 0; i < triangles.Count; i++)
             {
                 combinedMesh.SetTriangles(triangles[i], i);
-                combinedMesh.SetUVs(i, uvs[i]);
             }
             
+            combinedMesh.SetUVs(0, uvs);
             combinedMesh.SetColors(colors);
             combinedMesh.SetNormals(normals);
 
