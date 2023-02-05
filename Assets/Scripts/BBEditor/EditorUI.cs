@@ -60,7 +60,8 @@ namespace BrickBuilder.UI
         
         public HierarchyElement EnvironmentHierarchyElement;
 
-        public Sprite BrickSprite;
+        //public Sprite BrickSprite;
+        public Sprite[] BrickSprites;
         public Sprite EnvironmentSprite;
         public Sprite GroupSprite;
         
@@ -308,9 +309,9 @@ namespace BrickBuilder.UI
             HierarchyElement element = elementGO.GetComponent<HierarchyElement>();
             element.ID = brick.ID;
             element.Position = HierarchyElements.Count + 1;
-            
+
             element.Label.SetText(brick.Name);
-            element.SetIcon(instance.BrickSprite, brick.Color);
+            element.SetIcon(instance.BrickSprites[(int)brick.Shape], brick.Color);
             
             element.SelectButton.onClick.AddListener(delegate { HierarchyElementClicked(element, brick); });
             
