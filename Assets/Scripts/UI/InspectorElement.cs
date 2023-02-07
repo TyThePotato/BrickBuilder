@@ -16,6 +16,9 @@ namespace BrickBuilder.UI
         // Strings, Numbers
         public TMP_InputField[] InputFields;
         
+        // For formula support
+        public InputFieldFormula[] FormulaFields;
+        
         // Boolean
         public Toggle Toggle;
         
@@ -26,6 +29,9 @@ namespace BrickBuilder.UI
         public Image ColorPreview;
         public Button ColorButton;
         public ColorPicker.ColorPickerMode ColorType;
+        
+        // Label
+        public TextMeshProUGUI Label;
         
         // ====
         // Init
@@ -46,9 +52,14 @@ namespace BrickBuilder.UI
         // String
         public void SetValue(string value)
         {
-            if (PropertyValue != Value.String) return;
-            
-            InputFields[0].SetTextWithoutNotify(value);
+            if (PropertyValue != Value.String && PropertyValue != Value.Label) return;
+
+            if (PropertyValue == Value.String) {
+                InputFields[0].SetTextWithoutNotify(value);
+            }
+            else {
+                Label.SetText(value);
+            }
         }
 
         // Int & Dropdown
@@ -105,7 +116,6 @@ namespace BrickBuilder.UI
             if (PropertyValue != Value.Color) return;
 
             ColorPreview.color = value;
-            Debug.Log(ColorPreview.color);
         }
 
         // ===
@@ -114,12 +124,12 @@ namespace BrickBuilder.UI
 
         public string GetString()
         {
-            if (PropertyValue != Value.String)
+            if (PropertyValue != Value.String && PropertyValue != Value.Label)
             {
                 throw new InspectorValueMismatchException();
             }
-            
-            return InputFields[0].text;
+
+            return PropertyValue == Value.Label ? Label.text : InputFields[0].text;
         }
         
         public int GetInteger()
@@ -199,7 +209,7 @@ namespace BrickBuilder.UI
 
             return ColorPreview.color;
         }
-        
+
         // =====
         // Other
         // =====
@@ -213,7 +223,8 @@ namespace BrickBuilder.UI
             Vector3Int,
             Boolean,
             Dropdown,
-            Color
+            Color,
+            Label
         }
     }
 }

@@ -8,6 +8,8 @@ namespace BrickBuilder.Rendering
     public class MaterialCache : MonoBehaviour
     {
         static MaterialCache instance;
+
+        public static bool TexturesVisible = true;
         
         public Texture StudTexture;
         public Texture InletTexture;
@@ -62,7 +64,8 @@ namespace BrickBuilder.Rendering
                 _ => null
             };
 
-            mat.SetTexture("_Texture", materialTexture);
+            if (TexturesVisible)
+                mat.SetTexture("_Texture", materialTexture);
             
             // Set Tile
             //mat.SetVector("_Tiling", tile);
@@ -76,6 +79,27 @@ namespace BrickBuilder.Rendering
             if (!glow)
                 MaterialDictionary.Add((face, transparent), mat);
             return mat;
+        }
+
+        public static void SetTextureVisibility(bool visibility) {
+            foreach (KeyValuePair<(FaceType, bool), Material> kvp in MaterialDictionary) {
+                Texture materialTexture = null;
+
+                if (visibility) {
+                    materialTexture = kvp.Key.Item1 switch {
+                        FaceType.Stud => instance.StudTexture,
+                        FaceType.Inlet => instance.InletTexture,
+                        FaceType.Spawnpoint => instance.SpawnpointTexture,
+                        FaceType.Grid => instance.GridTexture,
+                        FaceType.Grain => instance.GrainTexture,
+                        _ => null
+                    };
+                }
+                
+                kvp.Value.SetTexture("_Texture", materialTexture);
+            }
+            
+            TexturesVisible = visibility;
         }
 
         public enum FaceType

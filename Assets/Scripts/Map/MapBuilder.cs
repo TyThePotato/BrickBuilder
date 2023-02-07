@@ -179,7 +179,7 @@ namespace BrickBuilder.World
             }
             
             Material[] materials = new Material[materialCount];
-            bool transparent = brick.IsTransparent;
+            bool transparent = brick.isTransparent;
             
             // populate array
             materials[0] = MaterialCache.GetMaterial(slot1, transparent, glow);

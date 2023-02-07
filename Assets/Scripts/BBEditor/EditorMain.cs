@@ -37,8 +37,8 @@ namespace BrickBuilder
             }
             
             // debug
-            Site.AssetData ad = Site.BrickHillSiteAPI.RetrieveAssetData("256270");
-            Debug.Log(ad);
+            //Site.AssetData ad = Site.BrickHillSiteAPI.RetrieveAssetData("256270");
+            //Debug.Log(ad);
         }
 
         // ===============

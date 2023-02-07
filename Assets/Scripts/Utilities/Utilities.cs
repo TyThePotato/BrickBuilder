@@ -188,7 +188,7 @@ namespace BrickBuilder.Utilities
                 value.y > max.y ? max.y : value.y < min.y ? min.y : value.y
             );
         }
-        
+
         /// <summary>
         /// for clamping euler angle components since they are goofy
         /// </summary>
@@ -227,6 +227,28 @@ namespace BrickBuilder.Utilities
                 Mathf.Round(value.x),
                 Mathf.Round(value.y),
                 Mathf.Round(value.z)
+            );
+        }
+        
+        // rounds each component of a vector3 to the nearest whatever
+        public static Vector3 Round(this Vector3 vector, float nearest) {
+            return new Vector3(
+                Mathf.Round(vector.x * nearest) / nearest,
+                Mathf.Round(vector.y * nearest) / nearest,
+                Mathf.Round(vector.z * nearest) / nearest
+            );
+        }
+        
+        public static Vector3 ToBHPosition(this Vector3 value, Vector3 scale, int rotation) {
+            Vector3 tempScale = scale;
+            rotation = rotation.Modulo(360);
+            if (rotation != 0 && rotation != 180)
+                tempScale = tempScale.SwapXZ();
+            
+            return new Vector3(
+                value.x * -1f - tempScale.x / 2f,
+                value.z - tempScale.z / 2f,
+                value.y - tempScale.y / 2f
             );
         }
     }

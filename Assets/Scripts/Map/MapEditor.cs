@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using BrickBuilder.Commands;
 using BrickBuilder.Rendering;
 using BrickBuilder.Utilities;
+using RuntimeGizmos;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -28,6 +29,7 @@ namespace BrickBuilder.World
         public LayerMask SelectionLayerMask;
         public float SelectionOffset = 0.01f;
 
+        public static bool CanDragSelect = false;
         private static bool selectButtonDown = false; // for supporting drag selecting
         private static Vector2 mouseBeginPosition;
         
@@ -58,7 +60,8 @@ namespace BrickBuilder.World
 
         private void Update()
         {
-            if (selectButtonDown)
+            // Update drag selection box
+            if (selectButtonDown && CanDragSelect)
             {
                 Vector2 mouseDelta = Mouse.current.delta.ReadValue();
                 
@@ -80,7 +83,8 @@ namespace BrickBuilder.World
 
             mouseBeginPosition = Mouse.current.position.ReadValue();
             
-            EditorUI.ShowScreenSelectionBox();
+            if (CanDragSelect)
+                EditorUI.ShowScreenSelectionBox();
         }
 
         private static void SelectButtonEnd()
@@ -93,7 +97,7 @@ namespace BrickBuilder.World
                 if (mousePosition == mouseBeginPosition) {
                     // select brick under cursor
                     TrySelectBrick();
-                } else {
+                } else if (CanDragSelect) {
                     // select area of bricks
                     TrySelectArea(mouseBeginPosition, mousePosition);
                 }
@@ -216,6 +220,9 @@ namespace BrickBuilder.World
             if (!fromUI)
                 EditorUI.HierarchyElementSelectState(EditorUI.GetHierarchyElement(brick.ID), true);
             //EditorUI.SetInspector(SelectedBricks);
+            
+            // Update gizmos
+            TransformGizmo.instance.AddTarget(MapBuilder.BrickGOs[brick.ID].transform, brick);
         }
 
         public static void DeselectBrick(Brick brick, bool fromUI = false)
@@ -233,6 +240,9 @@ namespace BrickBuilder.World
             if (!fromUI)
                 EditorUI.HierarchyElementSelectState(EditorUI.GetHierarchyElement(brick.ID), false);
             //EditorUI.SetInspector(SelectedBricks);
+            
+            // Update gizmos
+            TransformGizmo.instance.RemoveTarget(MapBuilder.BrickGOs[brick.ID].transform);
         }
 
         public static void DeselectAllBricks(bool fromUI = false)
@@ -252,6 +262,9 @@ namespace BrickBuilder.World
             if (!fromUI)
                 EditorUI.SetAllHierarchyElementsSelected(false);
             //EditorUI.SetInspector();
+            
+            // Update gizmos
+            TransformGizmo.instance.ClearTargets();
         }
 
         // Gets the brick that the point is touching
@@ -456,12 +469,23 @@ namespace BrickBuilder.World
 
         public static void UpdateBricks(List<Brick> bricks)
         {
-            // TODO
-            // this function will basically just regenerate the chunks of all the specified bricks
-            // considerations:
-            // - what if a brick is selected?
+            // is this overkill
+            for (int i = 0; i < bricks.Count; i++) {
+                // Copy brick data
+                EditorMain.OpenedMap.GetBrick(bricks[i].ID).Copy(bricks[i]);
+                
+                // Update visual
+                MapBuilder.UpdateBrick(bricks[i].ID);
+            }
+        }
+        
+        public static void UpdateBrick(Brick brick)
+        {
+            // Copy brick data
+            EditorMain.OpenedMap.GetBrick(brick.ID).Copy(brick);
             
-            
+            // Update visual
+            MapBuilder.UpdateBrick(brick.ID);
         }
         
         // ==================

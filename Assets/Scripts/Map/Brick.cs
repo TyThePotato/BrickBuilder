@@ -21,8 +21,9 @@ namespace BrickBuilder.World
         public int Model;
 
         public bool Collision;
-        
-        public bool IsTransparent => Color.a != 1.0f;
+
+        public Vector3 brickHillPosition => Position.ToBHPosition(Scale, Rotation.y);
+        public bool isTransparent => Color.a != 1.0f;
 
         /// <summary>
         /// Creates a brick with random ID and default values
@@ -143,6 +144,23 @@ namespace BrickBuilder.World
             Brick returnBrick = new Brick(ID, Name, Position, Scale, Rotation, Color, Collision);
             returnBrick.Shape = Shape;
             return returnBrick;
+        }
+
+        /// <summary>
+        /// Copies data from existing brick
+        /// </summary>
+        /// <param name="source"></param>
+        public void Copy(Brick source, bool includeID = false) {
+            if (includeID) ID = source.ID;
+
+            Name = source.Name;
+            Position = source.Position;
+            Scale = source.Scale;
+            Rotation = source.Rotation;
+            Color = source.Color;
+            Shape = source.Shape;
+            Model = source.Model;
+            Collision = source.Collision;
         }
     }
 

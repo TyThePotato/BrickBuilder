@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using BrickBuilder.Commands;
+using BrickBuilder.Rendering;
 using BrickBuilder.World;
+using RuntimeGizmos;
 using SFB;
 using TMPro;
 using UnityEngine;
@@ -110,7 +112,7 @@ namespace BrickBuilder.UI
             InspectorEnvironmentElements[0].SetColorButtonCallback(ColorPickerUpdated);
             InspectorEnvironmentElements[1].SetColorButtonCallback(ColorPickerUpdated);
             InspectorEnvironmentElements[2].SetColorButtonCallback(ColorPickerUpdated);
-            InspectorBrickElements[4].SetColorButtonCallback(ColorPickerUpdated);
+            InspectorBrickElements[5].SetColorButtonCallback(ColorPickerUpdated);
         }
 
         private void Update()
@@ -237,6 +239,15 @@ namespace BrickBuilder.UI
             // TODO: extra settings dialog (brk version, bb data, etc)
         }
 
+        public void GizmosTypeButton(int type) {
+            TransformGizmo.instance.SetType(type);
+        }
+
+        public void GizmosSpaceButton() {
+            TransformSpace space = TransformGizmo.instance.space;
+            TransformGizmo.instance.space = space == TransformSpace.Global ? TransformSpace.Local : TransformSpace.Global;
+        }
+        
         public void NewBrickButton()
         {
             MapEditor.CreateBrick(true);
@@ -257,6 +268,10 @@ namespace BrickBuilder.UI
         public void RedoButton()
         {
             CommandManager.HistoryForward();
+        }
+
+        public void ToggleTexturesButton() {
+            MaterialCache.SetTextureVisibility(!MaterialCache.TexturesVisible);
         }
 
         // ===================
@@ -360,6 +375,8 @@ namespace BrickBuilder.UI
                 if (HierarchyElements[i] != null)
                     Destroy(HierarchyElements[i].gameObject);
             }
+            
+            HierarchyElements.Clear();
         }
 
         // Moves a hierarchy element
@@ -532,12 +549,13 @@ namespace BrickBuilder.UI
             Brick lastBrick = bricks[bricks.Count - 1];
             instance.InspectorBrickElements[0].SetValue(lastBrick.Name);
             instance.InspectorBrickElements[1].SetValue(lastBrick.Position);
-            instance.InspectorBrickElements[2].SetValue(lastBrick.Scale);
-            instance.InspectorBrickElements[3].SetValue(lastBrick.Rotation.y);
-            instance.InspectorBrickElements[4].SetValue(lastBrick.Color);
-            instance.InspectorBrickElements[5].SetValue((int) lastBrick.Shape);
-            instance.InspectorBrickElements[6].SetValue(lastBrick.Model);
-            instance.InspectorBrickElements[7].SetValue(lastBrick.Collision);
+            instance.InspectorBrickElements[2].SetValue(lastBrick.brickHillPosition.ToString());
+            instance.InspectorBrickElements[3].SetValue(lastBrick.Scale);
+            instance.InspectorBrickElements[4].SetValue(lastBrick.Rotation.y);
+            instance.InspectorBrickElements[5].SetValue(lastBrick.Color);
+            instance.InspectorBrickElements[6].SetValue((int) lastBrick.Shape);
+            instance.InspectorBrickElements[7].SetValue(lastBrick.Model);
+            instance.InspectorBrickElements[8].SetValue(lastBrick.Collision);
         }
 
         // Display nothing
@@ -555,6 +573,103 @@ namespace BrickBuilder.UI
             {
                 instance.InspectorBrickElements[i].gameObject.SetActive(false);
             }
+        }
+
+        // Save inspector values to selection
+        public void ApplyInspectorChanges(int element) {
+            Debug.Log("AIC");
+            if (MapEditor.SelectedBricks.Count > 0) {
+                Debug.Log("Brix");
+                // Change Bricks
+                for (int i = 0; i < MapEditor.SelectedBricks.Count; i++) {
+                    Brick brick = MapEditor.SelectedBricks[i];
+                    
+                    // TODO: data validation
+                    switch ((InspectorChange)element) {
+                        case InspectorChange.BrickName:
+                            brick.Name = InspectorBrickElements[0].GetString();
+                            break;
+                        case InspectorChange.BrickPositionX:
+                            brick.Position.x = InspectorBrickElements[1].GetVector3().x;
+                            Debug.Log("hung");
+                            break;
+                        case InspectorChange.BrickPositionY:
+                            brick.Position.y = InspectorBrickElements[1].GetVector3().y;
+                            break;
+                        case InspectorChange.BrickPositionZ:
+                            brick.Position.z = InspectorBrickElements[1].GetVector3().z;
+                            break;
+                        case InspectorChange.BrickScaleX:
+                            brick.Scale.x = InspectorBrickElements[3].GetVector3().x;
+                            break;
+                        case InspectorChange.BrickScaleY:
+                            brick.Scale.y = InspectorBrickElements[3].GetVector3().y;
+                            break;
+                        case InspectorChange.BrickScaleZ:
+                            brick.Scale.z = InspectorBrickElements[3].GetVector3().z;
+                            break;
+                        case InspectorChange.BrickRotation:
+                            brick.Rotation.y = InspectorEnvironmentElements[4].GetInteger();
+                            break;
+                        case InspectorChange.BrickColor:
+                            brick.Color = InspectorBrickElements[5].GetColor();
+                            break;
+                        case InspectorChange.BrickShape:
+                            brick.Shape = (BrickShape)InspectorBrickElements[6].GetInteger();
+                            break;
+                        case InspectorChange.BrickModel:
+                            brick.Model = InspectorBrickElements[7].GetInteger();
+                            break;
+                        case InspectorChange.BrickCollision:
+                            brick.Collision = InspectorBrickElements[8].GetBoolean();
+                            break;
+                    }
+                }
+                
+                MapEditor.UpdateBricks(MapEditor.SelectedBricks);
+            }
+            else {
+                // Change Environment
+                switch ((InspectorChange)element) {
+                    case InspectorChange.AmbientColor:
+                        EditorMain.OpenedMap.AmbientColor = InspectorEnvironmentElements[0].GetColor();
+                        break;
+                    case InspectorChange.BaseplateColor:
+                        EditorMain.OpenedMap.BaseplateColor = InspectorEnvironmentElements[1].GetColor();
+                        break;
+                    case InspectorChange.SkyColor:
+                        EditorMain.OpenedMap.SkyColor = InspectorEnvironmentElements[2].GetColor();
+                        break;
+                    case InspectorChange.BaseplateSize:
+                        EditorMain.OpenedMap.BaseplateSize = InspectorEnvironmentElements[3].GetInteger();
+                        break;
+                    case InspectorChange.SunIntensity:
+                        EditorMain.OpenedMap.SunIntensity = InspectorEnvironmentElements[4].GetInteger();
+                        break;
+                }
+                
+                MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+            }
+        }
+
+        public enum InspectorChange {
+            AmbientColor,
+            BaseplateColor,
+            SkyColor,
+            BaseplateSize,
+            SunIntensity,
+            BrickName,
+            BrickPositionX,
+            BrickPositionY,
+            BrickPositionZ,
+            BrickScaleX,
+            BrickScaleY,
+            BrickScaleZ,
+            BrickRotation,
+            BrickColor,
+            BrickShape,
+            BrickModel,
+            BrickCollision
         }
         
         // ==================
