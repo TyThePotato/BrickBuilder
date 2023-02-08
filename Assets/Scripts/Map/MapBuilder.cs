@@ -76,12 +76,23 @@ namespace BrickBuilder.World
         }
 
         public static void UpdateBrick(Guid id) {
-            // just wipe and rebuild lol
             Brick targetBrick = EditorMain.OpenedMap.GetBrick(id);
             if (targetBrick == null) return; // TODO: Exception?
             
-            RemoveBrick(id);
-            BuildBrick(targetBrick);
+            // go stuff
+            GameObject brickGO = BrickGOs[id];
+            brickGO.transform.position = targetBrick.Position;
+
+            // mesh stuff
+            MeshFilter mf = brickGO.GetComponent<MeshFilter>();
+            Destroy(mf.sharedMesh); // delete existing mesh
+            mf.mesh = BrickMeshGenerator.CreateMesh(targetBrick);
+            brickGO.GetComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
+            
+            // material stuff
+            bool selected = MapEditor.BrickIsSelected(targetBrick);
+            MeshRenderer mr = brickGO.GetComponent<MeshRenderer>();
+            mr.materials = GetBrickMaterials(targetBrick, selected);
         }
 
         public static void SetBrickGlow(Brick brick, bool glow) {

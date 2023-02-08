@@ -12,6 +12,7 @@ namespace BrickBuilder.User {
         public static Camera Camera;
         
         public float CameraSpeed;
+        public float PanSpeed;
         public float LookSpeed;
         public bool InvertCamera = false;
         
@@ -19,6 +20,7 @@ namespace BrickBuilder.User {
 
         private bool _movementBoost = false;
         private bool _lookButtonDown = false;
+        private bool _panButtonDown = false;
 
         private void Awake()
         {
@@ -29,6 +31,8 @@ namespace BrickBuilder.User {
             InputHelper.boost.canceled += _ => _movementBoost = false;
             InputHelper.lookButton.started += _ => _lookButtonDown = true;
             InputHelper.lookButton.canceled += _ => _lookButtonDown = false;
+            InputHelper.panButton.started += _ => _panButtonDown = true;
+            InputHelper.panButton.canceled += _ => _panButtonDown = false;
         }
 
         private void Update()
@@ -51,13 +55,27 @@ namespace BrickBuilder.User {
             if (_movementBoost) speed *= 2f;
             transform.position += relativeMovementDelta * (speed * Time.deltaTime);
             
-            // Camera
-            if (_lookButtonDown)
+            
+            // Pan movement
+            if (_panButtonDown) 
+            {
+                // get mouse delta
+                Vector2 mouseDelta = InputHelper.look.ReadValue<Vector2>();
+                
+                // get world movement delta
+                Vector3 worldMovementDelta = transform.right * -mouseDelta.x +
+                                             transform.up * -mouseDelta.y;
+                
+                // move
+                transform.position += worldMovementDelta * (PanSpeed * Time.deltaTime);
+            }
+            
+            // Camera Look
+            if (_lookButtonDown) 
             {
                 // lock mouse
-                // dont lock in linux editor bc linux editor sux and locked cursor always has 0 delta
-                if (Cursor.lockState != CursorLockMode.Locked && Application.platform != RuntimePlatform.LinuxEditor)
-                    Cursor.lockState = CursorLockMode.Locked;
+                if (!MouseLocker.IsLocked)
+                    MouseLocker.SetLockState(true);
                 
                 // get look delta
                 Vector2 lookDelta = InputHelper.look.ReadValue<Vector2>();
@@ -79,9 +97,8 @@ namespace BrickBuilder.User {
             }
             else
             {
-                // unlock mouse
-                if (Cursor.lockState != CursorLockMode.None)
-                    Cursor.lockState = CursorLockMode.None;
+                if (MouseLocker.IsLocked)
+                    MouseLocker.SetLockState(false);
             }
         }
     }

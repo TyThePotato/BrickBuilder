@@ -4,6 +4,7 @@ using BrickBuilder.Input;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using BrickBuilder.Clipboard;
 using BrickBuilder.Commands;
 using BrickBuilder.Rendering;
 using BrickBuilder.Utilities;
@@ -24,8 +25,7 @@ namespace BrickBuilder.World
         public static MapEditor instance;
         
         public static List<Brick> SelectedBricks = new List<Brick>();
-        public static List<Chunk> SelectedChunks = new List<Chunk>();
-        
+
         public LayerMask SelectionLayerMask;
         public float SelectionOffset = 0.01f;
 
@@ -222,7 +222,7 @@ namespace BrickBuilder.World
             //EditorUI.SetInspector(SelectedBricks);
             
             // Update gizmos
-            TransformGizmo.instance.AddTarget(MapBuilder.BrickGOs[brick.ID].transform, brick);
+            TransformGizmo.instance.AddTarget(MapBuilder.BrickGOs[brick.ID].transform, new BrickData(brick));
         }
 
         public static void DeselectBrick(Brick brick, bool fromUI = false)
@@ -265,6 +265,15 @@ namespace BrickBuilder.World
             
             // Update gizmos
             TransformGizmo.instance.ClearTargets();
+        }
+
+        public static bool BrickIsSelected(Brick brick) {
+            for (int i = 0; i < SelectedBricks.Count; i++) {
+                if (SelectedBricks[i].ID == brick.ID)
+                    return true;
+            }
+
+            return false;
         }
 
         // Gets the brick that the point is touching
@@ -353,7 +362,7 @@ namespace BrickBuilder.World
             brick.Scale = scale;
 
             // create and register command
-            Command command = CommandManager.RegisterCommand(new List<Brick>() {brick}, false);
+            Command command = CommandManager.RegisterCommand(new List<BrickData>() {new BrickData(brick)}, false);
             
             // run command
             CommandManager.DoCommand(command);
@@ -373,7 +382,6 @@ namespace BrickBuilder.World
                     pos = hit.point;
                     
                     // round all values that will not be changed
-                    // i hate this i hate this i hate this so much
                     if (hit.normal.x == 0f)
                     {
                         pos.x = Mathf.Round(pos.x) + 0.5f;
@@ -401,101 +409,155 @@ namespace BrickBuilder.World
             return CreateBrick(pos, Vector3.one);
         }
 
-        public static void ImportBricks(List<Brick> bricks, bool newID = true)
+        public static void ImportBricks(List<BrickData> bricks, bool newID = true)
         {
             for (int i = 0; i < bricks.Count; i++) {
-                Brick copy = bricks[i].Clone(); // use a copy so that original bricks dont get edited over
+                //Brick copy = bricks[i].Clone(); // use a copy so that original bricks dont get edited over
+                Brick brick = new Brick();
+                brick.CopyBrickData(bricks[i], true);
                 
                 if (newID)
-                    copy.ID = Guid.NewGuid();
+                    brick.ID = Guid.NewGuid();
                 
-                EditorMain.OpenedMap.Bricks.Add(copy);
-                EditorUI.CreateHierarchyElement(copy,false);
-                MapBuilder.BuildBrick(copy);
+                EditorMain.OpenedMap.Bricks.Add(brick);
+                EditorUI.CreateHierarchyElement(brick,false);
+                MapBuilder.BuildBrick(brick);
             }
         }
 
-        public static void RemoveBrick(Brick brick, bool registerCommand = true)
+        public static void RemoveBrick(BrickData brick, bool registerCommand = true)
         {
             if (registerCommand)
             {
                 // register brick deletion command THEN delete brick
-                Command command = CommandManager.RegisterCommand(new List<Brick>() {brick}, true);
-                CommandManager.DoCommand(command);
-            }
-            else
-            {
-                // actually delete brick
+                Command command = CommandManager.RegisterCommand(new List<BrickData>() {brick}, true);
                 
-                // Delete Brick GameObject
-                MapBuilder.RemoveBrick(brick.ID);
-
-                // delete hierarchy element
-                EditorUI.RemoveHierarchyElement(brick.ID);
-
-                // Delete Brick Object
-                Brick targetBrick = EditorMain.OpenedMap.GetBrick(brick.ID);
-                if (targetBrick != null)
-                    EditorMain.OpenedMap.Bricks.Remove(targetBrick);
+                //CommandManager.DoCommand(command);
             }
+            
+            // Delete Brick GameObject
+            MapBuilder.RemoveBrick(brick.ID);
+
+            // delete hierarchy element
+            EditorUI.RemoveHierarchyElement(brick.ID);
+
+            // Delete Brick Object
+            Brick targetBrick = EditorMain.OpenedMap.GetBrick(brick.ID);
+            if (targetBrick != null)
+                EditorMain.OpenedMap.Bricks.Remove(targetBrick);
         }
 
-        public static void RemoveBricks(List<Brick> bricks, bool registerCommand = true)
+        public static void RemoveBricks(List<BrickData> bricks, bool registerCommand = true)
         {
             if (registerCommand)
             {
                 // register brick deletion command THEN delete bricks
                 Command command = CommandManager.RegisterCommand(bricks, true);
-                CommandManager.DoCommand(command);
+                
+                //CommandManager.DoCommand(command);
             }
-            else
-            {
-                // ACTUALLY delete bricks
+            
+            for (int i = 0; i < bricks.Count; i++) {
+                MapBuilder.RemoveBrick(bricks[i].ID);
+                EditorUI.RemoveHierarchyElement(bricks[i].ID);
 
-                for (int i = 0; i < bricks.Count; i++) {
-                    MapBuilder.RemoveBrick(bricks[i].ID);
-                    EditorUI.RemoveHierarchyElement(bricks[i].ID);
+                Brick targetBrick = EditorMain.OpenedMap.GetBrick(bricks[i].ID); // is this slow?
+                if (targetBrick != null)
+                    EditorMain.OpenedMap.Bricks.Remove(targetBrick);
+            }
+        }
 
-                    Brick targetBrick = EditorMain.OpenedMap.GetBrick(bricks[i].ID); // is this slow?
-                    if (targetBrick != null)
-                        EditorMain.OpenedMap.Bricks.Remove(targetBrick);
+        public static void RemoveBricks(List<Brick> bricks, bool registerCommand = true) {
+            List<BrickData> brickDatas = new List<BrickData>();
+            for (int i = 0; i < bricks.Count; i++) {
+                brickDatas.Add(new BrickData(bricks[i]));
+            }
+            
+            RemoveBricks(brickDatas, registerCommand);
+        }
+
+        public static void CopyBricks(List<BrickData> bricks = null) {
+            if (bricks == null) {
+                if (SelectedBricks.Count == 0)
+                    return;
+
+                bricks = new List<BrickData>();
+                for (int i = 0; i < SelectedBricks.Count; i++) {
+                    bricks.Add(new BrickData(SelectedBricks[i]));
                 }
             }
+            
+            ClipboardHelper.Copy(bricks);
+        }
+
+        public static void PasteBricks() {
+            
+        }
+
+        public static void DuplicateBricks(List<BrickData> bricks = null) {
+            
         }
         
         // ==================
         // BRICK MODIFICATION
         // ==================
 
-        public static void UpdateBricks(List<Brick> bricks)
+        public static void UpdateBricks(List<BrickData> changes, bool registerCommand = false)
         {
-            // is this overkill
-            for (int i = 0; i < bricks.Count; i++) {
-                // Copy brick data
-                EditorMain.OpenedMap.GetBrick(bricks[i].ID).Copy(bricks[i]);
+            if (registerCommand) {
+                List<BrickData> currentBricks = new List<BrickData>();
+                for (int i = 0; i < changes.Count; i++) {
+                    Brick b = EditorMain.OpenedMap.GetBrick(changes[i].ID);
+                    if (b != null)
+                        currentBricks.Add(new BrickData(b));
+                }
+
+                Command command = CommandManager.RegisterCommand(changes, currentBricks);
+            }
+            
+            for (int i = 0; i < changes.Count; i++) {
+                // Apply Changes
+                Brick referencedBrick = EditorMain.OpenedMap.GetBrick(changes[i].ID);
+                referencedBrick.CopyBrickData(changes[i]);
                 
                 // Update visual
-                MapBuilder.UpdateBrick(bricks[i].ID);
+                MapBuilder.UpdateBrick(changes[i].ID);
             }
         }
         
-        public static void UpdateBrick(Brick brick)
+        public static void UpdateBrick(BrickData changes, bool registerCommand = false)
         {
-            // Copy brick data
-            EditorMain.OpenedMap.GetBrick(brick.ID).Copy(brick);
+            if (registerCommand) {
+                Brick currentBrick = EditorMain.OpenedMap.GetBrick(changes.ID);
+                if (currentBrick != null) {
+                    Command command = CommandManager.RegisterCommand(new List<BrickData> { changes }, new List<BrickData> { new BrickData(currentBrick) });
+                }
+            }
+            
+            // Apply changes
+            Brick referencedBrick = EditorMain.OpenedMap.GetBrick(changes.ID);
+            referencedBrick.CopyBrickData(changes);
             
             // Update visual
-            MapBuilder.UpdateBrick(brick.ID);
+            MapBuilder.UpdateBrick(changes.ID);
         }
         
         // ==================
         // WORLD MODIFICATION
         // ==================
 
-        public static void UpdateEnvironment(Color ambientColor, Color baseplateColor, Color skyColor,
-            int baseplateSize, int sunIntensity)
+        public static void UpdateEnvironment(MapData changes, bool registerCommand = false)
         {
-            // TODO
+            if (registerCommand) {
+                MapData currentMap = new MapData(EditorMain.OpenedMap);
+                Command command = CommandManager.RegisterCommand(changes, currentMap);
+            }
+            
+            // Apply changes
+            EditorMain.OpenedMap.CopyMapData(changes);
+            
+            // Update visual
+            MapBuilder.SetEnvironment(EditorMain.OpenedMap);
         }
         
         public static void ChangeSelectionColor(Color color)

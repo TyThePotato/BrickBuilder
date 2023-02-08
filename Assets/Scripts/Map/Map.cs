@@ -61,5 +61,13 @@ namespace BrickBuilder.World
             // there are no bricks with matching id
             return null;
         }
+
+        public void CopyMapData (MapData source) {
+            AmbientColor = source.AmbientColor;
+            BaseplateColor = source.BaseplateColor;
+            SkyColor = source.SkyColor;
+            BaseplateSize = source.BaseplateSize;
+            SunIntensity = source.SunIntensity;
+        }
     }
 }

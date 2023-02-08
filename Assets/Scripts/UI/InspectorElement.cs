@@ -15,10 +15,7 @@ namespace BrickBuilder.UI
 
         // Strings, Numbers
         public TMP_InputField[] InputFields;
-        
-        // For formula support
-        public InputFieldFormula[] FormulaFields;
-        
+
         // Boolean
         public Toggle Toggle;
         
@@ -32,18 +29,6 @@ namespace BrickBuilder.UI
         
         // Label
         public TextMeshProUGUI Label;
-        
-        // ====
-        // Init
-        // ====
-
-        public void SetColorButtonCallback(Action<Color, ColorPicker.ColorPickerMode> callback)
-        {
-            ColorButton.onClick.AddListener(delegate
-            {
-                ColorPicker.ShowColorPicker(ColorPreview.color, ColorType, callback);
-            });
-        }
 
         // ===
         // Set
@@ -213,6 +198,10 @@ namespace BrickBuilder.UI
         // =====
         // Other
         // =====
+
+        public void OpenColorPicker() {
+            ColorPicker.ShowColorPicker(ColorPreview.color, ColorType);
+        }
         
         public enum Value
         {

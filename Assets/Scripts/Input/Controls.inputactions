@@ -11,7 +11,8 @@
                     "id": "2c2f374c-5aa7-43b1-bdd9-d498c7e3530f",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Vertical",
@@ -19,7 +20,8 @@
                     "id": "bd9605d3-3c21-4f56-a3c2-d7c05c975181",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Look",
@@ -27,7 +29,8 @@
                     "id": "ebccbfc1-cd49-4198-a838-49ad70ed5790",
                     "expectedControlType": "Vector2",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": true
                 },
                 {
                     "name": "Boost",
@@ -35,7 +38,8 @@
                     "id": "00c158f3-27cd-4eae-9b9c-9335e11b8c7c",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Select",
@@ -43,7 +47,8 @@
                     "id": "f3e34cbe-538c-4e60-9fe2-b8958d139b0c",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Cancel",
@@ -51,7 +56,8 @@
                     "id": "3405ddfc-4cae-4bd6-99b2-5ee1a4b42b96",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "LookButton",
@@ -59,7 +65,17 @@
                     "id": "81931c80-9aa4-4dd1-8f02-0e5d378eb0d1",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PanButton",
+                    "type": "Button",
+                    "id": "e6cd546e-50df-430e-bae7-32c2b5d67534",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Selection Add",
@@ -67,7 +83,8 @@
                     "id": "b9972208-7ff4-4463-bb14-df902e701a4d",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 },
                 {
                     "name": "Hotkey Modifier",
@@ -75,7 +92,8 @@
                     "id": "0d88c471-3a53-4069-9128-28350b184f5b",
                     "expectedControlType": "Button",
                     "processors": "",
-                    "interactions": ""
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -241,6 +259,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Hotkey Modifier",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fb04c80c-da32-4420-8a75-2c6325bb754e",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PanButton",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

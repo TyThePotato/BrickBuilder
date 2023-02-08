@@ -17,6 +17,7 @@ namespace BrickBuilder.Commands
             {
                 // there are some commands forward in the history, discard them
                 CommandHistory.RemoveRange(HistoryPosition + 1, CommandHistory.Count - 1 - HistoryPosition);
+                Debug.Log("Overwrote future commands");
             }
 
             CommandHistory.Add(command);
@@ -26,38 +27,42 @@ namespace BrickBuilder.Commands
         }
 
         // Creates and adds a CreateBricks / DeleteBricks command to the command history
-        public static Command RegisterCommand(List<Brick> bricks, bool delete = false)
+        public static Command RegisterCommand(List<BrickData> bricks, bool delete = false)
         {
             Command command = new Command();
             command.Type = delete ? Command.CommandType.DeleteBricks : Command.CommandType.CreateBricks;
 
-            command.TargetBricks = new List<Brick>();
-            for (int i = 0; i < bricks.Count; i++)
-            {
-                command.TargetBricks.Add(bricks[i].Clone());
-            }
-            
+            command.TargetBricks = bricks;
+
             RegisterCommand(command);
 
             return command;
         }
 
         // Creates and adds an UpdateBricks command to the command history
-        public static Command RegisterCommand(List<Brick> newBricks, List<Brick> previousBricks)
+        public static Command RegisterCommand(List<BrickData> newBricks, List<BrickData> previousBricks)
         {
             Command command = new Command();
             command.Type = Command.CommandType.UpdateBricks;
 
-            command.TargetBricks = new List<Brick>();
-            for (int i = 0; i < newBricks.Count; i++)
-            {
-                command.TargetBricks.Add(newBricks[i].Clone());
-            }
-
+            command.TargetBricks = newBricks;
             command.PreviousBrickData = previousBricks;
             
             RegisterCommand(command);
 
+            return command;
+        }
+        
+        // Creates and adds an UpdateEnvironment command to the command history
+        public static Command RegisterCommand(MapData newMapData, MapData previousMapData) {
+            Command command = new Command();
+            command.Type = Command.CommandType.UpdateEnvironment;
+
+            command.NewEnvironmentData = newMapData;
+            command.OldEnvironmentData = previousMapData;
+
+            RegisterCommand(command);
+            
             return command;
         }
 
@@ -124,28 +129,28 @@ namespace BrickBuilder.Commands
         
         // Command Functions
 
-        private static void ImportBricks(List<Brick> bricks)
+        private static void ImportBricks(List<BrickData> bricks)
         {
             // Creates bricks using values specified in 'bricks', including ID
             MapEditor.ImportBricks(bricks, false);
         }
 
-        private static void DeleteBricks(List<Brick> bricks)
+        private static void DeleteBricks(List<BrickData> bricks)
         {
             // Removes all bricks from the world referenced in 'bricks' (via ID)
             MapEditor.RemoveBricks(bricks, false);
         }
 
-        private static void ModifyBricks(List<Brick> bricks)
+        private static void ModifyBricks(List<BrickData> bricks)
         {
             // Modifies all bricks referenced in 'bricks' (via ID) to have the specified values
             MapEditor.UpdateBricks(bricks);
         }
 
-        private static void ModifyEnvironment((Color, Color, Color, int, int) properties)
+        private static void ModifyEnvironment(MapData properties)
         {
             // Updates environment settings using values from 'properties'
-            MapEditor.UpdateEnvironment(properties.Item1, properties.Item2, properties.Item3, properties.Item4, properties.Item5);
+            MapEditor.UpdateEnvironment(properties);
         }
     }
 
@@ -154,11 +159,11 @@ namespace BrickBuilder.Commands
         public CommandType Type;
         
         // Command properties
-        public List<Brick> TargetBricks;
-        public List<Brick> PreviousBrickData; // Used when updating brick properties
+        public List<BrickData> TargetBricks;
+        public List<BrickData> PreviousBrickData; // Used when updating brick properties
 
-        public (Color, Color, Color, int, int) NewEnvironmentData;
-        public (Color, Color, Color, int, int) OldEnvironmentData;
+        public MapData NewEnvironmentData;
+        public MapData OldEnvironmentData;
         
         public enum CommandType
         {

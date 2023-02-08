@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
@@ -13,11 +14,14 @@ namespace BrickBuilder.UI
     public class ColorPicker : MonoBehaviour
     {
         public static ColorPicker instance;
+        public Canvas parentCanvas;
 
         public static Color CurrentColor;
         public static Color[] SavedColors;
 
         public static ColorPickerMode CurrentMode;
+
+        public static ColorChangedEvent OnColorChange = new ColorChangedEvent();
 
         // Images
         [Space(5)]
@@ -50,8 +54,6 @@ namespace BrickBuilder.UI
         [Header("Hex Controls")]
         public TMP_InputField HexField;
 
-        private static Action<Color, ColorPickerMode> _colorChangedCallback;
-        
         private void Awake()
         {
             if (instance == null)
@@ -78,9 +80,9 @@ namespace BrickBuilder.UI
             HideColorPicker();
         }
 
-        public static void ShowColorPicker(Color startColor, ColorPickerMode mode, Action<Color, ColorPickerMode> colorChangedCallback)
+        public static void ShowColorPicker(Color startColor, ColorPickerMode mode)
         {
-            ShowColorPicker(colorChangedCallback);
+            ShowColorPicker();
             
             // set color
             CurrentColor = startColor;
@@ -96,20 +98,14 @@ namespace BrickBuilder.UI
             instance.UpdateHex();
         }
         
-        public static void ShowColorPicker(Action<Color, ColorPickerMode> colorChangedCallback)
+        public static void ShowColorPicker()
         {
-            // set up callback for color change
-            _colorChangedCallback = colorChangedCallback;
-            
             // display color picker
             instance.gameObject.SetActive(true);
         }
 
         public static void HideColorPicker()
         {
-            // remove callback
-            _colorChangedCallback = null;
-            
             // reset mode
             CurrentMode = ColorPickerMode.None;
             
@@ -174,8 +170,9 @@ namespace BrickBuilder.UI
 
             // move dot
             float colorWheelSize = ColorWheelBackground.rectTransform.sizeDelta.x;
-            Vector2 relativeMousePosition = ped.position - ((Vector2)ColorWheelBackground.rectTransform.position +
-                                                            new Vector2(colorWheelSize / 2f, -colorWheelSize / 2f));
+            Vector2 relativeMousePosition = ped.position / parentCanvas.scaleFactor 
+                                            - ((Vector2)ColorWheelBackground.rectTransform.position 
+                                               + new Vector2(colorWheelSize / 2f, -colorWheelSize / 2f));
             ColorDot.anchoredPosition = relativeMousePosition;
             
             // clamp magnitude of anchored position
@@ -189,7 +186,12 @@ namespace BrickBuilder.UI
             UpdateHSV();
             UpdateHex();
             
-            ColorChanged();
+            //ColorChanged();
+        }
+
+        // Called when color picker is done being updated, i.e. mouse up
+        public void FinishedUpdating() {
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // Updates the color wheel & brightness slider to reflect current color values
@@ -225,7 +227,7 @@ namespace BrickBuilder.UI
             UpdateHSV();
             UpdateHex();
             
-            ColorChanged();
+            //ColorChanged();
         }
 
         // Called when the alpha slider is changed
@@ -235,13 +237,13 @@ namespace BrickBuilder.UI
             UpdateAlpha();
             UpdateHex();
             
-            ColorChanged();
+            //ColorChanged();
         }
 
         // Called when the alpha inputfield is updated
         public void AlphaInput()
         {
-            float alphaInput = ParseFieldText(AlphaField.text);
+            float alphaInput = ParseFieldText(AlphaField.text, 255);
             if (alphaInput != -1.0f)
             {
                 // :]
@@ -250,7 +252,7 @@ namespace BrickBuilder.UI
 
             UpdateAlpha();
             
-            ColorChanged();
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // Updates the alpha slider & inputfield to reflect current color values
@@ -264,21 +266,21 @@ namespace BrickBuilder.UI
         // Called when the rgb inputfield is updated
         public void RGBInput()
         {
-            float rInput = ParseFieldText(RedField.text);
+            float rInput = ParseFieldText(RedField.text, 255);
             if (rInput != -1.0f)
             {
                 CurrentColor.r = rInput;
 
             }
 
-            float gInput = ParseFieldText(GreenField.text);
+            float gInput = ParseFieldText(GreenField.text, 255);
             if (gInput != -1.0f)
             {
                 CurrentColor.g = gInput;
 
             }
 
-            float bInput = ParseFieldText(BlueField.text);
+            float bInput = ParseFieldText(BlueField.text, 255);
             if (bInput != -1.0f)
             {
                 CurrentColor.b = bInput;
@@ -289,7 +291,7 @@ namespace BrickBuilder.UI
             UpdateHSV();
             UpdateHex();
             
-            ColorChanged();
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // updates rgb inputfield to reflect current color values
@@ -307,7 +309,7 @@ namespace BrickBuilder.UI
         // Called when the hsv inputfield is updated
         public void HSVInput()
         {
-            float hInput = ParseFieldText(HueField.text);
+            float hInput = ParseFieldText(HueField.text, 360);
             if (hInput == -1.0f)
             {
                 // invalid
@@ -315,7 +317,7 @@ namespace BrickBuilder.UI
 
             }
 
-            float sInput = ParseFieldText(SaturationField.text);
+            float sInput = ParseFieldText(SaturationField.text, 100);
             if (sInput == -1.0f)
             {
                 // invalid
@@ -323,7 +325,7 @@ namespace BrickBuilder.UI
 
             }
 
-            float vInput = ParseFieldText(ValueField.text);
+            float vInput = ParseFieldText(ValueField.text, 100);
             if (vInput == -1.0f)
             {
                 // Invalid
@@ -339,7 +341,7 @@ namespace BrickBuilder.UI
             UpdateHSV();
             UpdateHex();
             
-            ColorChanged();
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // updates hsv inputfield to reflect current color values
@@ -347,13 +349,13 @@ namespace BrickBuilder.UI
         {
             Color.RGBToHSV(CurrentColor, out float h, out float s, out float v);
 
-            int h255 = (int) (h * 255);
-            int s255 = (int) (s * 255);
-            int v255 = (int) (v * 255);
+            int h360 = (int) (h * 359);
+            int s100 = (int) (s * 100);
+            int v100 = (int) (v * 100);
             
-            HueField.SetTextWithoutNotify(h255.ToString());
-            SaturationField.SetTextWithoutNotify(s255.ToString());
-            ValueField.SetTextWithoutNotify(v255.ToString());
+            HueField.SetTextWithoutNotify(h360.ToString());
+            SaturationField.SetTextWithoutNotify(s100.ToString());
+            ValueField.SetTextWithoutNotify(v100.ToString());
         }
 
         // Called when the hex inputfield is updated
@@ -365,8 +367,9 @@ namespace BrickBuilder.UI
             UpdateRGB();
             UpdateHSV();
             UpdateHex();
+            UpdateAlpha();
             
-            ColorChanged();
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // updates hex inputfield to reflect current color values
@@ -406,16 +409,16 @@ namespace BrickBuilder.UI
             UpdateHSV();
             UpdateHex();
             
-            ColorChanged();
+            OnColorChange.Invoke(CurrentColor, CurrentMode);
         }
 
         // Attempts to parse string to float, returns -1 if unsuccessful
-        private float ParseFieldText(string text)
+        private float ParseFieldText(string text, int range)
         {
             if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out int fieldInt))
             {
-                fieldInt = Mathf.Clamp(fieldInt, 0, 255);
-                return fieldInt / 255f;
+                fieldInt = fieldInt.Modulo(range+1);
+                return fieldInt / (float)range;
             }
             else
             {
@@ -423,11 +426,6 @@ namespace BrickBuilder.UI
             }
         }
 
-        private void ColorChanged()
-        {
-            _colorChangedCallback?.Invoke(CurrentColor, CurrentMode);
-        }
-        
         public enum ColorPickerMode
         {
             None,
@@ -438,4 +436,6 @@ namespace BrickBuilder.UI
             Paintbrush
         }
     }
+    
+    public class ColorChangedEvent : UnityEvent<Color, ColorPicker.ColorPickerMode> {}
 }

@@ -38,6 +38,7 @@ namespace BrickBuilder.Input
         public static InputAction select => Controls.Main.Select;
         public static InputAction cancel => Controls.Main.Cancel;
         public static InputAction lookButton => Controls.Main.LookButton;
+        public static InputAction panButton => Controls.Main.PanButton;
         
         public static InputAction selectionAdd => Controls.Main.SelectionAdd;
     }

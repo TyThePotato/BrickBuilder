@@ -91,6 +91,15 @@ public partial class @Controls : IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""PanButton"",
+                    ""type"": ""Button"",
+                    ""id"": ""e6cd546e-50df-430e-bae7-32c2b5d67534"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""Selection Add"",
                     ""type"": ""Button"",
                     ""id"": ""b9972208-7ff4-4463-bb14-df902e701a4d"",
@@ -274,6 +283,17 @@ public partial class @Controls : IInputActionCollection2, IDisposable
                     ""action"": ""Hotkey Modifier"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""fb04c80c-da32-4420-8a75-2c6325bb754e"",
+                    ""path"": ""<Mouse>/middleButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PanButton"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -289,6 +309,7 @@ public partial class @Controls : IInputActionCollection2, IDisposable
         m_Main_Select = m_Main.FindAction("Select", throwIfNotFound: true);
         m_Main_Cancel = m_Main.FindAction("Cancel", throwIfNotFound: true);
         m_Main_LookButton = m_Main.FindAction("LookButton", throwIfNotFound: true);
+        m_Main_PanButton = m_Main.FindAction("PanButton", throwIfNotFound: true);
         m_Main_SelectionAdd = m_Main.FindAction("Selection Add", throwIfNotFound: true);
         m_Main_HotkeyModifier = m_Main.FindAction("Hotkey Modifier", throwIfNotFound: true);
     }
@@ -357,6 +378,7 @@ public partial class @Controls : IInputActionCollection2, IDisposable
     private readonly InputAction m_Main_Select;
     private readonly InputAction m_Main_Cancel;
     private readonly InputAction m_Main_LookButton;
+    private readonly InputAction m_Main_PanButton;
     private readonly InputAction m_Main_SelectionAdd;
     private readonly InputAction m_Main_HotkeyModifier;
     public struct MainActions
@@ -370,6 +392,7 @@ public partial class @Controls : IInputActionCollection2, IDisposable
         public InputAction @Select => m_Wrapper.m_Main_Select;
         public InputAction @Cancel => m_Wrapper.m_Main_Cancel;
         public InputAction @LookButton => m_Wrapper.m_Main_LookButton;
+        public InputAction @PanButton => m_Wrapper.m_Main_PanButton;
         public InputAction @SelectionAdd => m_Wrapper.m_Main_SelectionAdd;
         public InputAction @HotkeyModifier => m_Wrapper.m_Main_HotkeyModifier;
         public InputActionMap Get() { return m_Wrapper.m_Main; }
@@ -402,6 +425,9 @@ public partial class @Controls : IInputActionCollection2, IDisposable
                 @LookButton.started -= m_Wrapper.m_MainActionsCallbackInterface.OnLookButton;
                 @LookButton.performed -= m_Wrapper.m_MainActionsCallbackInterface.OnLookButton;
                 @LookButton.canceled -= m_Wrapper.m_MainActionsCallbackInterface.OnLookButton;
+                @PanButton.started -= m_Wrapper.m_MainActionsCallbackInterface.OnPanButton;
+                @PanButton.performed -= m_Wrapper.m_MainActionsCallbackInterface.OnPanButton;
+                @PanButton.canceled -= m_Wrapper.m_MainActionsCallbackInterface.OnPanButton;
                 @SelectionAdd.started -= m_Wrapper.m_MainActionsCallbackInterface.OnSelectionAdd;
                 @SelectionAdd.performed -= m_Wrapper.m_MainActionsCallbackInterface.OnSelectionAdd;
                 @SelectionAdd.canceled -= m_Wrapper.m_MainActionsCallbackInterface.OnSelectionAdd;
@@ -433,6 +459,9 @@ public partial class @Controls : IInputActionCollection2, IDisposable
                 @LookButton.started += instance.OnLookButton;
                 @LookButton.performed += instance.OnLookButton;
                 @LookButton.canceled += instance.OnLookButton;
+                @PanButton.started += instance.OnPanButton;
+                @PanButton.performed += instance.OnPanButton;
+                @PanButton.canceled += instance.OnPanButton;
                 @SelectionAdd.started += instance.OnSelectionAdd;
                 @SelectionAdd.performed += instance.OnSelectionAdd;
                 @SelectionAdd.canceled += instance.OnSelectionAdd;
@@ -452,6 +481,7 @@ public partial class @Controls : IInputActionCollection2, IDisposable
         void OnSelect(InputAction.CallbackContext context);
         void OnCancel(InputAction.CallbackContext context);
         void OnLookButton(InputAction.CallbackContext context);
+        void OnPanButton(InputAction.CallbackContext context);
         void OnSelectionAdd(InputAction.CallbackContext context);
         void OnHotkeyModifier(InputAction.CallbackContext context);
     }

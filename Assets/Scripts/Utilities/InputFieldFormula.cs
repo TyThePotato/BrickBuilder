@@ -11,6 +11,7 @@ public class InputFieldFormula : MonoBehaviour {
     
     public NumberType numberType;
     public EvalEvent OnEvaluate = new EvalEvent();
+    public EvalStringEvent OnEvaluateWithText = new EvalStringEvent();
     
     [NonSerialized]
     public TMP_InputField InputField;
@@ -53,8 +54,9 @@ public class InputFieldFormula : MonoBehaviour {
         // modify field
         InputField.SetTextWithoutNotify(modifiedContent);
         
-        // invoke event finally
+        // invoke events
         OnEvaluate.Invoke();
+        OnEvaluateWithText.Invoke(modifiedContent);
     }
     
     public enum NumberType {
@@ -65,3 +67,4 @@ public class InputFieldFormula : MonoBehaviour {
 
 [Serializable]
 public class EvalEvent : UnityEvent { }
+public class EvalStringEvent : UnityEvent<string> { }

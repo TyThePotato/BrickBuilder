@@ -35,6 +35,7 @@ namespace BrickBuilder.World
             Name = "New Brick";
             
             Position = Vector3.zero;
+            Position.y = 0.5f; // place on top of baseplate
             Scale = Vector3.one;
             Rotation = UnityEngine.Vector3Int.zero;
 
@@ -53,6 +54,7 @@ namespace BrickBuilder.World
             Name = "New Brick";
             
             Position = Vector3.zero;
+            Position.y = 0.5f; // place on top of baseplate
             Scale = Vector3.one;
             Rotation = UnityEngine.Vector3Int.zero;
 
@@ -145,12 +147,8 @@ namespace BrickBuilder.World
             returnBrick.Shape = Shape;
             return returnBrick;
         }
-
-        /// <summary>
-        /// Copies data from existing brick
-        /// </summary>
-        /// <param name="source"></param>
-        public void Copy(Brick source, bool includeID = false) {
+        
+        public void CopyBrickData(BrickData source, bool includeID = false) {
             if (includeID) ID = source.ID;
 
             Name = source.Name;

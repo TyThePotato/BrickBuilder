@@ -107,12 +107,9 @@ namespace BrickBuilder.UI
         {
             SwitchMenuBarTab(0); // Open "File" tab on start
             SetInspector(); // clear inspector
-            
-            // Set Inspector Color Element Callbacks
-            InspectorEnvironmentElements[0].SetColorButtonCallback(ColorPickerUpdated);
-            InspectorEnvironmentElements[1].SetColorButtonCallback(ColorPickerUpdated);
-            InspectorEnvironmentElements[2].SetColorButtonCallback(ColorPickerUpdated);
-            InspectorBrickElements[5].SetColorButtonCallback(ColorPickerUpdated);
+
+            // Color picker event
+            ColorPicker.OnColorChange.AddListener(ColorPickerUpdated);
         }
 
         private void Update()
@@ -258,6 +255,14 @@ namespace BrickBuilder.UI
             if (MapEditor.SelectedBricks.Count == 0) return;
 
             MapEditor.RemoveBricks(MapEditor.SelectedBricks);
+        }
+
+        public void CopyButton() {
+            MapEditor.CopyBricks();
+        }
+
+        public void PasteButton() {
+            MapEditor.PasteBricks();
         }
 
         public void UndoButton()
@@ -577,78 +582,108 @@ namespace BrickBuilder.UI
 
         // Save inspector values to selection
         public void ApplyInspectorChanges(int element) {
-            Debug.Log("AIC");
             if (MapEditor.SelectedBricks.Count > 0) {
-                Debug.Log("Brix");
                 // Change Bricks
+                List<BrickData> modifiedBricks = new List<BrickData>();
                 for (int i = 0; i < MapEditor.SelectedBricks.Count; i++) {
-                    Brick brick = MapEditor.SelectedBricks[i];
+                    BrickData modifiedBrick = new BrickData(MapEditor.SelectedBricks[i]);
+                    bool modified = false;
                     
                     // TODO: data validation
                     switch ((InspectorChange)element) {
                         case InspectorChange.BrickName:
-                            brick.Name = InspectorBrickElements[0].GetString();
+                            modifiedBrick.Name = InspectorBrickElements[0].GetString();
+                            modified = true;
                             break;
                         case InspectorChange.BrickPositionX:
-                            brick.Position.x = InspectorBrickElements[1].GetVector3().x;
-                            Debug.Log("hung");
+                            modifiedBrick.Position.x = InspectorBrickElements[1].GetVector3().x;
+                            modified = true;
                             break;
                         case InspectorChange.BrickPositionY:
-                            brick.Position.y = InspectorBrickElements[1].GetVector3().y;
+                            modifiedBrick.Position.y = InspectorBrickElements[1].GetVector3().y;
+                            modified = true;
                             break;
                         case InspectorChange.BrickPositionZ:
-                            brick.Position.z = InspectorBrickElements[1].GetVector3().z;
+                            modifiedBrick.Position.z = InspectorBrickElements[1].GetVector3().z;
+                            modified = true;
                             break;
                         case InspectorChange.BrickScaleX:
-                            brick.Scale.x = InspectorBrickElements[3].GetVector3().x;
+                            modifiedBrick.Scale.x = InspectorBrickElements[3].GetVector3().x;
+                            modified = true;
                             break;
                         case InspectorChange.BrickScaleY:
-                            brick.Scale.y = InspectorBrickElements[3].GetVector3().y;
+                            modifiedBrick.Scale.y = InspectorBrickElements[3].GetVector3().y;
+                            modified = true;
                             break;
                         case InspectorChange.BrickScaleZ:
-                            brick.Scale.z = InspectorBrickElements[3].GetVector3().z;
+                            modifiedBrick.Scale.z = InspectorBrickElements[3].GetVector3().z;
+                            modified = true;
                             break;
                         case InspectorChange.BrickRotation:
-                            brick.Rotation.y = InspectorEnvironmentElements[4].GetInteger();
+                            modifiedBrick.Rotation.y = InspectorEnvironmentElements[4].GetInteger();
+                            modified = true;
                             break;
                         case InspectorChange.BrickColor:
-                            brick.Color = InspectorBrickElements[5].GetColor();
+                            modifiedBrick.Color = InspectorBrickElements[5].GetColor();
+                            modified = true;
                             break;
                         case InspectorChange.BrickShape:
-                            brick.Shape = (BrickShape)InspectorBrickElements[6].GetInteger();
+                            modifiedBrick.Shape = (BrickShape)InspectorBrickElements[6].GetInteger();
+                            modified = true;
                             break;
                         case InspectorChange.BrickModel:
-                            brick.Model = InspectorBrickElements[7].GetInteger();
+                            modifiedBrick.Model = InspectorBrickElements[7].GetInteger();
+                            modified = true;
                             break;
                         case InspectorChange.BrickCollision:
-                            brick.Collision = InspectorBrickElements[8].GetBoolean();
+                            modifiedBrick.Collision = InspectorBrickElements[8].GetBoolean();
+                            modified = true;
                             break;
                     }
+                    
+                    if (modified)
+                        modifiedBricks.Add(modifiedBrick);
                 }
                 
-                MapEditor.UpdateBricks(MapEditor.SelectedBricks);
+                if (modifiedBricks.Count > 0)
+                    MapEditor.UpdateBricks(modifiedBricks, true);
+                
+                SetInspector(MapEditor.SelectedBricks); // Update inspector values
             }
             else {
                 // Change Environment
+                MapData modifiedMap = new MapData(EditorMain.OpenedMap);
+                bool modified = false;
+                
                 switch ((InspectorChange)element) {
                     case InspectorChange.AmbientColor:
-                        EditorMain.OpenedMap.AmbientColor = InspectorEnvironmentElements[0].GetColor();
+                        modifiedMap.AmbientColor = InspectorEnvironmentElements[0].GetColor();
+                        modified = true;
                         break;
                     case InspectorChange.BaseplateColor:
-                        EditorMain.OpenedMap.BaseplateColor = InspectorEnvironmentElements[1].GetColor();
+                        modifiedMap.BaseplateColor = InspectorEnvironmentElements[1].GetColor();
+                        modified = true;
                         break;
                     case InspectorChange.SkyColor:
-                        EditorMain.OpenedMap.SkyColor = InspectorEnvironmentElements[2].GetColor();
+                        modifiedMap.SkyColor = InspectorEnvironmentElements[2].GetColor();
+                        modified = true;
                         break;
                     case InspectorChange.BaseplateSize:
-                        EditorMain.OpenedMap.BaseplateSize = InspectorEnvironmentElements[3].GetInteger();
+                        modifiedMap.BaseplateSize = InspectorEnvironmentElements[3].GetInteger();
+                        modified = true;
                         break;
                     case InspectorChange.SunIntensity:
-                        EditorMain.OpenedMap.SunIntensity = InspectorEnvironmentElements[4].GetInteger();
+                        modifiedMap.SunIntensity = InspectorEnvironmentElements[4].GetInteger();
+                        modified = true;
                         break;
                 }
                 
-                MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+                //MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+
+                if (modified)
+                    MapEditor.UpdateEnvironment(modifiedMap, true);
+
+                SetInspector(EditorMain.OpenedMap); // Update inspector values
             }
         }
 
@@ -676,26 +711,33 @@ namespace BrickBuilder.UI
         // Color Picker Stuff
         // ==================
 
-        private static void ColorPickerUpdated(Color newColor, ColorPicker.ColorPickerMode mode)
-        {
-            switch (mode)
-            {
+        private static void ColorPickerUpdated(Color newColor, ColorPicker.ColorPickerMode mode) {
+            int inspectorElementIndex = -1;
+
+            switch (mode) {
                 case ColorPicker.ColorPickerMode.Ambient:
-                    EditorMain.OpenedMap.AmbientColor = newColor;
-                    MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+                    instance.InspectorEnvironmentElements[0].SetValue(newColor);
+                    inspectorElementIndex = 0;
                     break;
                 case ColorPicker.ColorPickerMode.Baseplate:
-                    EditorMain.OpenedMap.BaseplateColor = newColor;
-                    MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+                    instance.InspectorEnvironmentElements[1].SetValue(newColor);
+                    inspectorElementIndex = 1;
                     break;
                 case ColorPicker.ColorPickerMode.Sky:
-                    EditorMain.OpenedMap.SkyColor = newColor;
-                    MapBuilder.SetEnvironment(EditorMain.OpenedMap);
+                    instance.InspectorEnvironmentElements[2].SetValue(newColor);
+                    inspectorElementIndex = 2;
                     break;
                 case ColorPicker.ColorPickerMode.Brick:
-                    MapEditor.ChangeSelectionColor(newColor);
+                    instance.InspectorBrickElements[5].SetValue(newColor);
+                    inspectorElementIndex = 13;
+                    break;
+                case ColorPicker.ColorPickerMode.Paintbrush:
+                    // TODO
                     break;
             }
+            
+            if (inspectorElementIndex != -1)
+                instance.ApplyInspectorChanges(inspectorElementIndex);
         }
         
         // ====================

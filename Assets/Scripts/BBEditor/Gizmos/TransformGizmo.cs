@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Collections;
+using BrickBuilder.Commands;
 using BrickBuilder.Utilities;
 using BrickBuilder.World;
 
@@ -350,23 +351,12 @@ namespace RuntimeGizmos
 			Vector3 currentSnapMovementAmount = Vector3.zero;
 			float currentSnapScaleAmount = 0;
             float currentSnapRotationAmount = 0;
-
-            /* TODO
-            ElementsChanged ec = new ElementsChanged();
-            ec.type = EditorAction.ActionType.ElementsChanged;
-
-            // save selected targets to oldbricks
-            List<BrickData> oldBricks = new List<BrickData>();
-
-            for (int i = 0; i < targetRootsOrdered.Count; i++) {
-                Transform target = targetRootsOrdered[i];
-                BrickGO bgo = target.GetComponent<BrickGO>();
-                if (bgo != null) {
-                    BrickData bd = new BrickData(bgo.brick); // bd owo
-                    oldBricks.Add(bd);
-                }
-            }
-            */
+            
+            // Pre-Transform
+            // Store starting brick data for command
+            List<BrickData> originalBrickData = new List<BrickData>();
+            foreach (TargetInfo ti in targetRoots.Values)
+                originalBrickData.Add(ti.brickData);
 
             while(!Mouse.current.leftButton.wasReleasedThisFrame)
 			{
@@ -449,8 +439,8 @@ namespace RuntimeGizmos
                             Transform target = targetRootsOrdered[i];
                             TargetInfo targetInfo = targetRoots[target];
                             
-                            targetInfo.brick.Position += movement;
-                            target.position = targetInfo.brick.Position;
+                            targetInfo.brickData.Position += movement;
+                            MapEditor.UpdateBrick(targetInfo.brickData, false); // performance?
                         }
 
 						SetPivotPointOffset(movement);
@@ -508,13 +498,13 @@ namespace RuntimeGizmos
                             Transform target = targetRootsOrdered[i];
                             TargetInfo targetInfo = targetRoots[target];
                             
-                            targetInfo.brick.Scale += targetScaleAmount;
-                            target.localScale = targetInfo.brick.Scale;
-                            
+                            targetInfo.brickData.Scale += targetScaleAmount;
+
                             // Offset position (scaling from edge)
                             Vector3 localOffset = Vector3.Scale(localAxis, targetScaleAmount / 2f);
-                            targetInfo.brick.Position += target.TransformDirection(localOffset);
-                            target.position = targetInfo.brick.Position;
+                            targetInfo.brickData.Position += target.TransformDirection(localOffset);
+                            
+                            MapEditor.UpdateBrick(targetInfo.brickData, false); // performance?
                         }
 
 						totalScaleAmount += scaleAmount;
@@ -577,7 +567,11 @@ namespace RuntimeGizmos
 							*/
                             
                             Transform target = targetRootsOrdered[i];
-                            target.Rotate(rotationAxis, rotateAmount, Space.World);
+                            TargetInfo targetInfo = targetRoots[target];
+
+                            targetInfo.brickData.Rotation.y += (int)rotateAmount.Modulo(360);
+                            
+                            MapEditor.UpdateBrick(targetInfo.brickData, false); // performance?
 						}
 
 						totalRotationAmount *= Quaternion.Euler(rotationAxis * rotateAmount);
@@ -588,25 +582,14 @@ namespace RuntimeGizmos
 
 				yield return null;
 			}
+            
+            // Post-Transform
+            // Register command with brick changes
+            List<BrickData> modifiedBrickData = new List<BrickData>();
+            foreach (TargetInfo ti in targetRoots.Values)
+                modifiedBrickData.Add(ti.brickData);
 
-            // save selected targets to newbricks and add ec to history
-            /* TODO
-            List<BrickData> newBricks = new List<BrickData>();
-
-            for (int i = 0; i < targetRootsOrdered.Count; i++) {
-                Transform target = targetRootsOrdered[i];
-                BrickGO bgo = target.GetComponent<BrickGO>();
-                if (bgo != null) {
-                    BrickData bd = new BrickData(bgo.brick); // bd owo
-                    newBricks.Add(bd);
-                }
-            }
-
-            ec.oldBricks = oldBricks.ToArray();
-            ec.newBricks = newBricks.ToArray();
-
-            EditorHistory.AddToHistory(ec);
-            */
+            CommandManager.RegisterCommand(modifiedBrickData, originalBrickData);
 
             totalRotationAmount = Quaternion.identity;
 			totalScaleAmount = 0;
@@ -682,14 +665,14 @@ namespace RuntimeGizmos
 			return Vector3.zero;
 		}
 
-        public void AddTarget(Transform target, Brick brick)
+        public void AddTarget(Transform target, BrickData brickData)
 		{
 			if(target != null)
 			{
 				if(targetRoots.ContainsKey(target)) return;
 				if(children.Contains(target)) return;
 
-				AddTargetRoot(target, brick);
+				AddTargetRoot(target, brickData);
 				//AddTargetHighlightedRenderers(target);
 
 				SetPivotPoint();
@@ -717,15 +700,15 @@ namespace RuntimeGizmos
 			children.Clear();
 		}
 
-		public void ClearAndAddTarget(Transform target, Brick brick)
+		public void ClearAndAddTarget(Transform target, BrickData brickData)
 		{
 			ClearTargets();
-			AddTarget(target, brick);
+			AddTarget(target, brickData);
 		}
 
-        void AddTargetRoot(Transform targetRoot, Brick brick) {
+        void AddTargetRoot(Transform targetRoot, BrickData brickData) {
             TargetInfo targetInfo = new TargetInfo {
-                brick = brick
+                brickData = brickData
             };
 
             targetRoots.Add(targetRoot, targetInfo);
@@ -1257,7 +1240,7 @@ namespace RuntimeGizmos
 			{
 				float circleLength = GetHandleLength(TransformType.Rotate);
 				//AddCircle(pivotPoint, axisInfo.xDirection, circleLength, axisVectors.x);
-				AddCircle(pivotPoint, axisInfo.yDirection, circleLength, axisVectors.y);
+				AddCircle(pivotPoint, axisInfo.yDirection, circleLength, axisVectors.y, false);
 				//AddCircle(pivotPoint, axisInfo.zDirection, circleLength, axisVectors.z);
 				//AddCircle(pivotPoint, (pivotPoint - transform.position).normalized, circleLength, axisVectors.all, false);
 			}

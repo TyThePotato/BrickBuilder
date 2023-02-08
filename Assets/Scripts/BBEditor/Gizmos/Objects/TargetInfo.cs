@@ -8,6 +8,6 @@ namespace RuntimeGizmos
 	{
 		public Vector3 centerPivotPoint;
         public Vector3 previousPosition;
-        public Brick brick;
+        public BrickData brickData;
     }
 }
