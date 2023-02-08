@@ -7,6 +7,10 @@
 - Resizable UI elements
 - All shapes (corner, inverted corner, round wedge, cone, sphere, grid/invalid)
 - Textured non-cube shapes
+- Accurate hierarchy icons (matches brick color and shape)
+- Camera panning
+- Mathematical equations in number fields
+- Toggleable textures
 
 ## Planned Additions/Changes
 - Plugin/scripting support
@@ -17,11 +21,9 @@
 - Hierarchy reorganization
 - UI localization support
 - Negative-scaled bricks (inside-out)
-- Brick shape hiearchy icons
 
 ## Feature parity TODO
 - Map exporting
-- Transform gizmos
 - Inspector panel
 - Collaborate
 - Test mode
