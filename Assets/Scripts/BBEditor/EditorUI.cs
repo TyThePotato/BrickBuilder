@@ -54,6 +54,7 @@ namespace BrickBuilder.UI
         [Space(5)]
         [Header("Hierarchy Variables")]
         public RectTransform HierarchyTransform;
+        public ScrollViewElementCuller HierarchyCuller;
         public Transform HierarchyElementRoot; // Transform of object with LayoutGroup
         public GameObject HierarchyElementPrefab;
 
@@ -318,6 +319,9 @@ namespace BrickBuilder.UI
             {
                 CreateHierarchyElement(map.Bricks[i]);
             }
+            
+            // calculate culler view area & visible elements
+            instance.StartCoroutine(HierarchyCullerScan());
         }
         
         // Creates a new hierarchy element
@@ -325,6 +329,7 @@ namespace BrickBuilder.UI
         {
             GameObject elementGO = Instantiate(instance.HierarchyElementPrefab, instance.HierarchyElementRoot);
             elementGO.name = brick.Name;
+            elementGO.tag = "Untagged"; // remove tag
 
             HierarchyElement element = elementGO.GetComponent<HierarchyElement>();
             element.ID = brick.ID;
@@ -346,6 +351,7 @@ namespace BrickBuilder.UI
             {
                 GameObject elementGO = Instantiate(instance.HierarchyElementPrefab, instance.HierarchyElementRoot);
                 elementGO.name = "Environment Element";
+                elementGO.tag = "Untagged"; // remove tag
                 
                 HierarchyElement element = elementGO.GetComponent<HierarchyElement>();
                 element.ID = Guid.Empty;
@@ -508,6 +514,34 @@ namespace BrickBuilder.UI
             }
 
             return null;
+        }
+
+        public void OnHierarchyScroll() {
+            StartCoroutine(HierarchyCullerRecalculateView());
+        }
+
+        public static IEnumerator HierarchyCullerRecalculateView() {
+            // wait a frame before scanning to give time for ui to reposition
+            yield return null;
+            
+            instance.HierarchyCuller.RecalculateView();
+        }
+
+        public static IEnumerator HierarchyCullerScan() {
+            // wait 2 frames before scanning to give time for ui to reposition and layout
+            // this is awful i need to find a real solution
+            for (int i = 0; i < 2; i++)
+                yield return null;
+
+            instance.HierarchyCuller.ScanForElements();
+            instance.HierarchyCuller.RecalculateView();
+        }
+        
+        public static IEnumerator HierarchyCullerAdd(GameObject element) {
+            // wait a frame before adding to give time for ui to reposition
+            yield return null;
+            
+            instance.HierarchyCuller.AddElement(element);
         }
         
         // ===================
