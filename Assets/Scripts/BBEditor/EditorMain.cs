@@ -75,7 +75,8 @@ namespace BrickBuilder
         public static void SaveFile(string path)
         {
             FilePath = path;
-            Debug.Log("Saving Unimplemented - " + path);
+
+            FileExporter.ExportMap(OpenedMap, path, FileExporter.FileType.BrkV2);
         }
 
         // ==============

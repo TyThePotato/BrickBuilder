@@ -251,5 +251,14 @@ namespace BrickBuilder.Utilities
                 value.y - tempScale.y / 2f
             );
         }
+
+        public static Vector3 ToBHScale(this Vector3 value, int rotation) {
+            Vector3 tempScale = value;
+            rotation = rotation.Modulo(360);
+            if (rotation != 0 && rotation != 180)
+                tempScale = tempScale.SwapXZ();
+
+            return tempScale.SwapYZ();
+        }
     }
 }
